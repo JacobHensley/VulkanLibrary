@@ -7,12 +7,12 @@
 
 namespace VkLibrary {
 
-    ImGuiContext::ImGuiContext()
+    ImGuiLayer::ImGuiLayer()
 	{
 		Init();
 	}
 
-    ImGuiContext::~ImGuiContext()
+    ImGuiLayer::~ImGuiLayer()
 	{
         Ref<VulkanDevice> device = Application::GetApp().GetVulkanDevice();
 
@@ -26,7 +26,7 @@ namespace VkLibrary {
         ImGui::DestroyContext();
 	}
 
-	void ImGuiContext::Init()
+	void ImGuiLayer::Init()
 	{
 		Ref<Swapchain> swapChain = Application::GetSwapchain();
 		Ref<VulkanDevice> device = Application::GetVulkanDevice();
@@ -196,7 +196,7 @@ namespace VkLibrary {
         } 
 	}
 
-	void ImGuiContext::BeginFrame()
+	void ImGuiLayer::BeginFrame()
 	{
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -230,15 +230,14 @@ namespace VkLibrary {
         ImGui::PopStyleVar(2);
 
         // DockSpace
-        ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+        ImGuiID dockspace_id = ImGui::GetID("DockSpaceID");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
         ImGui::End();
 	}
 
-	void ImGuiContext::EndFrame()
+	void ImGuiLayer::EndFrame()
 	{
-        Ref<Swapchain> swapChain = Application::GetSwapchain();
         ImGui::Render();
 
         ImGuiIO& io = ImGui::GetIO();

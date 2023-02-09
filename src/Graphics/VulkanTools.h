@@ -15,6 +15,20 @@ namespace VkLibrary {
 		// Returns an error code as a string
 		std::string ErrorString(VkResult errorCode);
 
+		bool IsDepthFormat(VkFormat format);
+		bool IsStencilFormat(VkFormat format);
+
+		void InsertImageMemoryBarrier(
+			VkCommandBuffer commandBuffer,
+			VkImage image,
+			VkAccessFlags srcAccessMask,
+			VkAccessFlags dstAccessMask,
+			VkImageLayout oldImageLayout,
+			VkImageLayout newImageLayout,
+			VkPipelineStageFlags srcStageMask,
+			VkPipelineStageFlags dstStageMask,
+			VkImageSubresourceRange subresourceRange);
+
 		// Default validation layers
 		extern int validationLayerCount;
 		extern const char* validationLayerNames[];
@@ -49,6 +63,7 @@ namespace VkLibrary {
 		void SetCommandBufferName(VkCommandBuffer cmdBuffer, const char* name);
 		void SetQueueName(VkQueue queue, const char* name);
 		void SetImageName(VkImage image, const char* name);
+		void SetImageViewName(VkImageView image, const char* name);
 		void SetSamplerName(VkSampler sampler, const char* name);
 		void SetBufferName(VkBuffer buffer, const char* name);
 		void SetDeviceMemoryName(VkDeviceMemory memory, const char* name);

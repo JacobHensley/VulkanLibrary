@@ -29,6 +29,13 @@ namespace VkLibrary {
 
         m_WindowHandle = glfwCreateWindow(m_Width, m_Height, m_Name.c_str(), nullptr, nullptr);
         glfwSetWindowUserPointer(m_WindowHandle, this);
+
+        glfwSetScrollCallback(m_WindowHandle, [](GLFWwindow* window, double xOffset, double yOffset)
+        {
+            Window& win = *(Window*)glfwGetWindowUserPointer(window);
+            win.SetMouseScrollwheel(yOffset);
+            win.m_IsMouseScrolling = true;
+        });
     }
 
     void Window::OnUpdate()

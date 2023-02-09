@@ -3,8 +3,8 @@
 #include "VulkanTools.h"
 #include "Core/Application.h"
 
-namespace VkLibrary
-{
+namespace VkLibrary {
+
     ComputePipeline::ComputePipeline(ComputePipelineSpecification specification)
         : m_Specification(specification)
     {

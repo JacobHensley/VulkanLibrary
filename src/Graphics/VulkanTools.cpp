@@ -40,6 +40,59 @@ namespace VkLibrary {
 			}
 		}
 
+		bool IsDepthFormat(VkFormat format)
+		{
+			std::vector<VkFormat> formats =
+			{
+				VK_FORMAT_D16_UNORM,
+				VK_FORMAT_X8_D24_UNORM_PACK32,
+				VK_FORMAT_D32_SFLOAT,
+				VK_FORMAT_D16_UNORM_S8_UINT,
+				VK_FORMAT_D24_UNORM_S8_UINT,
+				VK_FORMAT_D32_SFLOAT_S8_UINT,
+			};
+
+			return std::find(formats.begin(), formats.end(), format) != std::end(formats);
+		}
+
+		bool IsStencilFormat(VkFormat format)
+		{
+			std::vector<VkFormat> formats =
+			{
+				VK_FORMAT_S8_UINT,
+				VK_FORMAT_D16_UNORM_S8_UINT,
+				VK_FORMAT_D24_UNORM_S8_UINT,
+				VK_FORMAT_D32_SFLOAT_S8_UINT,
+			};
+
+			return std::find(formats.begin(), formats.end(), format) != std::end(formats);
+		}
+
+		void InsertImageMemoryBarrier(
+			VkCommandBuffer commandBuffer,
+			VkImage image,
+			VkAccessFlags srcAccessMask,
+			VkAccessFlags dstAccessMask,
+			VkImageLayout oldImageLayout,
+			VkImageLayout newImageLayout,
+			VkPipelineStageFlags srcStageMask,
+			VkPipelineStageFlags dstStageMask,
+			VkImageSubresourceRange subresourceRange)
+		{
+			VkImageMemoryBarrier imageMemoryBarrier{};
+			imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier.srcAccessMask = srcAccessMask;
+			imageMemoryBarrier.dstAccessMask = dstAccessMask;
+			imageMemoryBarrier.oldLayout = oldImageLayout;
+			imageMemoryBarrier.newLayout = newImageLayout;
+			imageMemoryBarrier.image = image;
+			imageMemoryBarrier.subresourceRange = subresourceRange;
+
+			vkCmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+		}
+
 		static VkDebugUtilsMessengerEXT s_DebugUtilsMessenger;
 
 		VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsMessengerCallback(
@@ -116,6 +169,11 @@ namespace VkLibrary {
 		void SetImageName(VkImage image, const char* name)
 		{
 			SetObjectName((uint64_t)image, VK_OBJECT_TYPE_IMAGE, name);
+		}
+
+		void SetImageViewName(VkImageView image, const char* name)
+		{
+			SetObjectName((uint64_t)image, VK_OBJECT_TYPE_IMAGE_VIEW, name);
 		}
 
 		void SetSamplerName(VkSampler sampler, const char* name)

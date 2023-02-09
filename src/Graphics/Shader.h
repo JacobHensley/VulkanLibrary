@@ -72,6 +72,7 @@ namespace VkLibrary {
 		uint32_t Offset = 0;
 	};
 
+	// TODO: Add debug name support
 	// TODO: Provide support array items in shader reflection and layout generation
 	// NOTE: Reflection for HLSL is not entirely accurate
 

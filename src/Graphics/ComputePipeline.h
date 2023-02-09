@@ -2,8 +2,8 @@
 #include <vulkan/vulkan.h>
 #include "Shader.h"
 
-namespace VkLibrary
-{
+namespace VkLibrary {
+
 	struct ComputePipelineSpecification
 	{
 		Ref<Shader> Shader;

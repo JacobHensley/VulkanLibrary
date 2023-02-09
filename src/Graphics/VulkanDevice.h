@@ -34,6 +34,9 @@ namespace VkLibrary {
 		inline VkDevice GetLogicalDevice() const { return m_LogicalDevice; };
 		inline SwapChainSupportDetails GetSwapChainSupportDetails() const { return m_SwapChainSupportDetails; }
 
+		VkCommandBuffer CreateCommandBuffer(VkCommandBufferLevel level, bool begin);
+		void FlushCommandBuffer(VkCommandBuffer commandBuffer, bool free);
+
 		inline QueueFamilyIndices GetQueueFamilyIndices() const { return m_QueueFamilyIndices; };
 		inline VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
 
@@ -59,6 +62,7 @@ namespace VkLibrary {
 		std::vector<std::string> m_SupportedDeviceExtensions;
 
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
+		VkCommandPool m_CommandPool = VK_NULL_HANDLE;
 
 		VkPhysicalDeviceProperties2 m_DeviceProperties{};
 		VkPhysicalDeviceFeatures m_DeviceFeatures{};

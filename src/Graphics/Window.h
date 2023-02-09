@@ -27,13 +27,22 @@ namespace VkLibrary {
 	private:
 		void Init();
 	
+		inline bool IsMouseScrolling() { return m_IsMouseScrolling; }
+		inline float GetMouseScrollwheel() { return m_MouseScrollWheel; }
+		inline void SetMouseScrollwheel(float value) { m_MouseScrollWheel = value; }
+
 	private:
 		const std::string m_Name;
 		int m_Width;
 		int m_Height;
 
+		float m_MouseScrollWheel = 0.0f;
+		bool m_IsMouseScrolling = false;
+
 		GLFWwindow* m_WindowHandle = nullptr;
 		VkSurfaceKHR m_VulkanSurface = nullptr;
+
+		friend class Input;
 	};
 
 }

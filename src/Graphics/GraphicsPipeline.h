@@ -3,8 +3,8 @@
 #include "Shader.h"
 #include "VertexBufferLayout.h"
 
-namespace VkLibrary
-{
+namespace VkLibrary {
+
 	struct GraphicsPipelineSpecification
 	{
 		Ref<Shader> Shader = nullptr;

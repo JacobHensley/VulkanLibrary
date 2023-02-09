@@ -41,7 +41,7 @@ namespace VkLibrary {
 		m_Swapchain = CreateRef<Swapchain>();
 		VulkanAllocator::Init(m_VulkanDevice);
 
-		m_ImGUIContext = CreateRef<ImGuiContext>();
+		m_ImGUIContext = CreateRef<ImGuiLayer>();
 	}
 
 	void Application::OnUpdate()
@@ -72,8 +72,6 @@ namespace VkLibrary {
 		}
 
 		m_ImGUIContext->EndFrame();
-
-		// TODO: Draw ImGUI inside of a render pass
 	}
 
 	void Application::Run()
@@ -84,10 +82,9 @@ namespace VkLibrary {
 			
 			m_Swapchain->BeginFrame();
 
-			OnRender();
 			OnImGUIRender();
+			OnRender();
 
-			// End frame
 			m_Swapchain->Present();
 		}
 

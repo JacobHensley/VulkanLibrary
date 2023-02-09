@@ -3,8 +3,8 @@
 #include "VulkanTools.h"
 #include "Core/Application.h"
 
-namespace VkLibrary
-{
+namespace VkLibrary {
+
 	static const std::array<VkDynamicState, 3> s_DynamicStates = {
 		VK_DYNAMIC_STATE_VIEWPORT,
 		VK_DYNAMIC_STATE_SCISSOR,

@@ -9,6 +9,8 @@
 
 namespace VkLibrary {
 
+	// TODO: Draw ImGUI inside of a render pass at end of OnImGUIRender()
+
 	class Application
 	{
 	public:
@@ -49,7 +51,7 @@ namespace VkLibrary {
 		Ref<VulkanDevice> m_VulkanDevice;
 		Ref<Swapchain> m_Swapchain;
 		Ref<Window> m_Window;
-		Ref<ImGuiContext> m_ImGUIContext;
+		Ref<ImGuiLayer> m_ImGUIContext;
 	};
 
 }

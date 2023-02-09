@@ -3,11 +3,11 @@
 
 namespace VkLibrary {
 
-	class ImGuiContext
+	class ImGuiLayer
 	{
 	public: 
-		ImGuiContext();
-		~ImGuiContext();
+		ImGuiLayer();
+		~ImGuiLayer();
 
 		void BeginFrame();
 		void EndFrame();

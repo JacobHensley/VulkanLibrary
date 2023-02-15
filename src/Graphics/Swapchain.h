@@ -35,23 +35,25 @@ namespace VkLibrary {
 		inline VkExtent2D GetExtent() const { return m_Extent; }
 
 		uint32_t GetFramesInFlight();
+		void Resize(uint32_t width, uint32_t height);
 
 	private:
-		void Init();
+		void Init(uint32_t width, uint32_t height);
 		void Destroy();
 
-		void PickDetails();
+		void PickDetails(uint32_t width, uint32_t height);
 		void CreateImageViews();
 		void CreateFramebuffers();
 		void CreateCommandBuffers();
 		void CreateSynchronizationObjects();
 
-		void Resize();
 		VkResult QueuePresent(VkQueue queue, uint32_t imageIndex, VkSemaphore waitSemaphore);
 
 	private:
 		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+
+		uint32_t m_Width = 0, m_Height = 0;
 
 		VkCommandPool m_CommandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_CommandBuffers;

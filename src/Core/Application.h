@@ -9,8 +9,6 @@
 
 namespace VkLibrary {
 
-	// TODO: Draw ImGUI inside of a render pass at end of OnImGUIRender()
-
 	class Application
 	{
 	public:
@@ -29,10 +27,13 @@ namespace VkLibrary {
 		inline static Ref<VulkanDevice> GetVulkanDevice() { return s_Instance->GetVulkanDeviceInternal();; }
 		inline static Ref<Window> GetWindow() { return s_Instance->GetWindowInternal();; }
 
+		inline static VkCommandBuffer GetActiveCommandBuffer() { return GetSwapchain()->GetCurrentCommandBuffer(); }
+		
 	private:
 		void Init();
 		void OnUpdate();
 		void OnRender();
+		void OnWindowResize(uint32_t width, uint32_t height);
 		void OnImGUIRender();
 
 		inline Ref<Swapchain> GetSwapchainInternal() { return m_Swapchain; }

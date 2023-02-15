@@ -170,7 +170,7 @@ namespace VkLibrary {
         {
             // Use any command queue
             VkCommandPool command_pool = swapChain->GetCommandPool();
-            VkCommandBuffer command_buffer = swapChain->GetCommandBuffers()[0];
+            VkCommandBuffer command_buffer = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, false);
 
             vkResetCommandPool(device->GetLogicalDevice(), command_pool, 0);
 
@@ -248,6 +248,77 @@ namespace VkLibrary {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
         }
+	}
+
+	void ImGuiLayer::BeginRenderPass()
+	{
+		VkRenderPass renderPass;
+		VkFramebuffer vulkanFramebuffer;
+		VkExtent2D extent;
+
+		Ref<Swapchain> swapChain = Application::GetSwapchain();
+
+		vulkanFramebuffer = swapChain->GetCurrentFramebuffer();
+		renderPass = swapChain->GetRenderPass();
+		extent = swapChain->GetExtent();
+
+		VkClearValue clearColor[2];
+		clearColor[0].color = { 0.5f, 0.1f, 0.1f, 1.0f };
+		clearColor[1].depthStencil = { 1.0f, 0 };
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = renderPass;
+		renderPassInfo.framebuffer = vulkanFramebuffer;
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = extent;
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = clearColor;
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = (float)extent.width;
+		viewport.height = (float)extent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		viewport.y = (float)extent.height;
+		viewport.height = -(float)extent.height;
+
+		Ref<VulkanDevice> device = Application::GetVulkanDevice();
+        VkCommandBuffer commandBuffer = Application::GetActiveCommandBuffer();
+
+		VkCommandBufferBeginInfo begin_info = {};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		vkBeginCommandBuffer(commandBuffer, &begin_info);
+
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+		VkRect2D scissor;
+		scissor.offset = renderPassInfo.renderArea.offset;
+		scissor.extent = renderPassInfo.renderArea.extent;
+
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+
+	void ImGuiLayer::EndRenderPass()
+	{
+        VkCommandBuffer commandBuffer = Application::GetActiveCommandBuffer();
+
+		vkCmdEndRenderPass(commandBuffer);
+		vkEndCommandBuffer(commandBuffer);
+
+		//Ref<VulkanDevice> device = Application::GetVulkanDevice();
+		//device->FlushCommandBuffer(m_ActiveCommandBuffer, true);
+	}
+
+	void ImGuiLayer::RenderDrawLists()
+	{
+        BeginRenderPass();
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), Application::GetActiveCommandBuffer());
+        EndRenderPass();
 	}
 
 }

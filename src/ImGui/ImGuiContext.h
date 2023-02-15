@@ -9,9 +9,15 @@ namespace VkLibrary {
 		ImGuiLayer();
 		~ImGuiLayer();
 
+		// CPU side
 		void BeginFrame();
 		void EndFrame();
+		
+		// Vulkan side
+		void BeginRenderPass();
+		void EndRenderPass();
 
+		void RenderDrawLists();
 	private:
 		void Init();
 

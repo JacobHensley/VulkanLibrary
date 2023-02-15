@@ -36,6 +36,7 @@ namespace VkLibrary {
 
 		m_Window = CreateRef<Window>(m_Name, 1280, 720);
 		m_VulkanInstance = CreateRef<VulkanInstance>(m_Name);
+		m_Window->SetResizeCallback([this](uint32_t width, uint32_t height) { OnWindowResize(width, height); });
 		m_Window->InitVulkanSurface();
 		m_VulkanDevice = CreateRef<VulkanDevice>();
 		m_Swapchain = CreateRef<Swapchain>();
@@ -62,6 +63,12 @@ namespace VkLibrary {
 		}
 	}
 
+	void Application::OnWindowResize(uint32_t width, uint32_t height)
+	{
+		if (!m_Window->IsMinimized())
+			m_Swapchain->Resize(width, height);
+	}
+
 	void Application::OnImGUIRender()
 	{
 		m_ImGUIContext->BeginFrame();
@@ -79,13 +86,17 @@ namespace VkLibrary {
 		while (!m_Window->IsClosed())
 		{
 			OnUpdate();
-			
-			m_Swapchain->BeginFrame();
-
 			OnImGUIRender();
-			OnRender();
+			
+			if (!m_Minimized)
+			{
+				m_Swapchain->BeginFrame();
 
-			m_Swapchain->Present();
+				OnRender();
+
+				m_ImGUIContext->RenderDrawLists();
+				m_Swapchain->Present();
+			}
 		}
 
 		vkDeviceWaitIdle(m_VulkanDevice->GetLogicalDevice());

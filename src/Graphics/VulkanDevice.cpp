@@ -32,17 +32,18 @@ namespace VkLibrary {
 			if (IsDeviceSuitable(device))
 			{
 				m_PhysicalDevice = device;
-
-				m_SupportedDeviceExtensions = GetSupportedDeviceExtensions(device);
-				m_SwapChainSupportDetails = QuerySwapChainSupport(device);
-
-				uint32_t queueFamilyCount;
-				vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-				m_QueueFamilyProperties.resize(queueFamilyCount);
-				vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, m_QueueFamilyProperties.data());
+				break;
 			}
 		}
+
+		m_SupportedDeviceExtensions = GetSupportedDeviceExtensions(m_PhysicalDevice);
+		m_SwapChainSupportDetails = QuerySwapChainSupport(m_PhysicalDevice);
+
+		uint32_t queueFamilyCount;
+		vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, nullptr);
+
+		m_QueueFamilyProperties.resize(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, m_QueueFamilyProperties.data());
 
 		ASSERT(m_PhysicalDevice != VK_NULL_HANDLE, "Could not find suitable device");
 
@@ -291,7 +292,7 @@ namespace VkLibrary {
 		return supportedExtensions;
 	}
 
-	SwapChainSupportDetails VulkanDevice::QuerySwapChainSupport(VkPhysicalDevice device)
+	SwapChainSupportDetails VulkanDevice::QuerySwapChainSupport(VkPhysicalDevice device) const
 	{
 		SwapChainSupportDetails details;
 

@@ -11,7 +11,8 @@ namespace VkLibrary {
 
 	Swapchain::Swapchain()
 	{
-		Init();
+		glm::ivec2 windowSizePixels = Application::GetWindow()->GetFramebufferSize();
+		Init(windowSizePixels.x, windowSizePixels.y);
 	}
 
 	Swapchain::~Swapchain()
@@ -19,13 +20,15 @@ namespace VkLibrary {
 		Destroy();
 	}
 
-	void Swapchain::Init()
+	void Swapchain::Init(uint32_t width, uint32_t height)
 	{
 		Ref<VulkanDevice> device = Application::GetVulkanDevice();
 		VkSurfaceKHR surface = Application::GetWindow()->GetVulkanSurface();
 		SwapChainSupportDetails supportDetails = device->GetSwapChainSupportDetails();
 
-		PickDetails();
+		PickDetails(width, height);
+
+		VkSwapchainKHR oldSwapchain = m_Swapchain;
 
 		// Create swapchain
 		VkSwapchainCreateInfoKHR createInfo{};
@@ -44,9 +47,12 @@ namespace VkLibrary {
 		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		createInfo.preTransform = supportDetails.Capabilities.currentTransform;
 		createInfo.clipped = VK_TRUE;
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
+		createInfo.oldSwapchain = oldSwapchain;
 
 		VK_CHECK_RESULT(vkCreateSwapchainKHR(device->GetLogicalDevice(), &createInfo, nullptr, &m_Swapchain));
+
+		if (oldSwapchain)
+			vkDestroySwapchainKHR(device->GetLogicalDevice(), oldSwapchain, nullptr);
 
 		// Get swapchain image handles
 		VK_CHECK_RESULT(vkGetSwapchainImagesKHR(device->GetLogicalDevice(), m_Swapchain, &m_ImageCount, nullptr));
@@ -94,7 +100,6 @@ namespace VkLibrary {
 		}
 
 		vkDestroyCommandPool(device->GetLogicalDevice(), m_CommandPool, nullptr);
-		vkDestroySwapchainKHR(device->GetLogicalDevice(), m_Swapchain, nullptr);
 	}
 
 	void Swapchain::BeginFrame()
@@ -126,14 +131,21 @@ namespace VkLibrary {
 
 		if (result != VK_SUCCESS)
 		{
-			Resize();
+			if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+			{
+				Resize(m_Width, m_Height);
+			}
+			else
+			{
+				VK_CHECK_RESULT(result);
+			}
 		}
 
 		m_CurrentBufferIndex = (m_CurrentBufferIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 		VK_CHECK_RESULT(vkWaitForFences(device->GetLogicalDevice(), 1, &m_WaitFences[m_CurrentBufferIndex], VK_TRUE, UINT64_MAX));
 	}
 
-	void Swapchain::PickDetails()
+	void Swapchain::PickDetails(uint32_t width, uint32_t height)
 	{
 		Ref<VulkanDevice> device = Application::GetVulkanDevice();
 		SwapChainSupportDetails supportDetails = device->GetSwapChainSupportDetails();
@@ -169,18 +181,15 @@ namespace VkLibrary {
 		}
 		else
 		{
-			glm::ivec2 windowSizePixels = Application::GetWindow()->GetFramebufferSize();
-			VkExtent2D actualExtent =
-			{
-				static_cast<uint32_t>(windowSizePixels.x),
-				static_cast<uint32_t>(windowSizePixels.y)
-			};
-
+			VkExtent2D actualExtent = { width, height };
 			actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
 			actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-
+			
 			selectedExtent = actualExtent;
 		}
+
+		m_Width = selectedExtent.width;
+		m_Height = selectedExtent.height;
 
 		// Select image count
 		uint32_t imageCount = capabilities.minImageCount + 1;
@@ -342,14 +351,14 @@ namespace VkLibrary {
 		}
 	}
 
-	void Swapchain::Resize()
+	void Swapchain::Resize(uint32_t width, uint32_t height)
 	{
 		Ref<VulkanDevice> device = Application::GetVulkanDevice();
 
 		vkDeviceWaitIdle(device->GetLogicalDevice());
 
 		Destroy();
-		Init();
+		Init(width, height);
 	}
 
 	VkResult Swapchain::QueuePresent(VkQueue queue, uint32_t imageIndex, VkSemaphore waitSemaphore)

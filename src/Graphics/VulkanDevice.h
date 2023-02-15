@@ -32,7 +32,7 @@ namespace VkLibrary {
 	public:
 		inline VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; };
 		inline VkDevice GetLogicalDevice() const { return m_LogicalDevice; };
-		inline SwapChainSupportDetails GetSwapChainSupportDetails() const { return m_SwapChainSupportDetails; }
+		inline SwapChainSupportDetails GetSwapChainSupportDetails() const { return QuerySwapChainSupport(m_PhysicalDevice); }
 
 		VkCommandBuffer CreateCommandBuffer(VkCommandBufferLevel level, bool begin);
 		void FlushCommandBuffer(VkCommandBuffer commandBuffer, bool free);
@@ -51,7 +51,7 @@ namespace VkLibrary {
 		std::vector<VkDeviceQueueCreateInfo> GetQueueCreateInfo(VkQueueFlags requestedQueueTypes);
 
 		std::vector<std::string> GetSupportedDeviceExtensions(VkPhysicalDevice device);
-		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device) const;
 
 	private:
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;

@@ -36,9 +36,25 @@ namespace VkLibrary {
             win.SetMouseScrollwheel(yOffset);
             win.m_IsMouseScrolling = true;
         });
+
+        glfwSetWindowSizeCallback(m_WindowHandle, [](GLFWwindow* window, int width, int height)
+        {
+			Window& win = *(Window*)glfwGetWindowUserPointer(window);
+            win.OnResize((uint32_t)width, (uint32_t)height);
+        });
     }
 
-    void Window::OnUpdate()
+	void Window::OnResize(uint32_t width, uint32_t height)
+	{
+        m_Width = (int)width;
+        m_Height = (int)height;
+        m_Minimized = m_Width == 0 || m_Height == 0;
+
+        if (m_ResizeCallback)
+            m_ResizeCallback(width, height);
+	}
+
+	void Window::OnUpdate()
     {
         glfwPollEvents();
     }

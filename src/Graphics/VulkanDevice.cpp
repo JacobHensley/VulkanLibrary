@@ -13,6 +13,8 @@ namespace VkLibrary {
 
 	VulkanDevice::~VulkanDevice()
 	{
+		vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
+
 		vkDestroyDevice(m_LogicalDevice, nullptr);
 	}
 

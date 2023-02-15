@@ -88,7 +88,7 @@ namespace VkLibrary {
 			OnUpdate();
 			OnImGUIRender();
 			
-			if (!m_Minimized)
+			if (!m_Window->IsMinimized())
 			{
 				m_Swapchain->BeginFrame();
 

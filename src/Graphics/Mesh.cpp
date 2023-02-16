@@ -190,6 +190,27 @@ namespace VkLibrary {
 	{
 		for (tinygltf::Material& material : m_Model.materials)
 		{
+			MaterialBuffer& materialBuffer = m_MaterialBuffers.emplace_back();
+
+			materialBuffer.AlbedoValue = glm::make_vec3(&material.pbrMetallicRoughness.baseColorFactor[0]);
+			materialBuffer.MetallicValue = material.pbrMetallicRoughness.metallicFactor;
+			materialBuffer.RoughnessValue = material.pbrMetallicRoughness.roughnessFactor;
+
+			uint32_t albedoTextureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+			if (albedoTextureIndex != -1)
+			{
+				const auto& texture = m_Model.textures[albedoTextureIndex];
+				const auto& image = m_Model.images[texture.source];
+
+				Texture2DSpecification textureSpec;
+				textureSpec.path = m_Path.parent_path() / image.uri;
+				textureSpec.DebugName = (m_Path.filename().string()  + ", Albedo Texture");
+
+				m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
+
+				materialBuffer.AlbedoMapIndex = (uint32_t)m_Textures.size() - 1;
+				materialBuffer.AlbedoValue = glm::vec3(1.0f);
+			}
 		}
 	}
 

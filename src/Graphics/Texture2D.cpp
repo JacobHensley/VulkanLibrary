@@ -7,6 +7,8 @@ namespace VkLibrary {
 	Texture2D::Texture2D(Texture2DSpecification specification)
 		: m_Specification(specification)
 	{
+		m_Path = m_Specification.path;
+
 		// Load image from disk
 		int width, height, bpp;
 		stbi_set_flip_vertically_on_load(true);

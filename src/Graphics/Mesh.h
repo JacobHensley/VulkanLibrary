@@ -1,5 +1,6 @@
 #pragma once
 #include "Graphics/VulkanBuffers.h"
+#include "Graphics/Texture2D.h"
 #include <tinygltf/tiny_gltf.h>
 #include <glm/glm.hpp>
 #include <filesystem>
@@ -23,6 +24,18 @@ namespace VkLibrary {
 		uint32_t MaterialIndex = 0;
 		glm::mat4 LocalTransform = glm::mat4(1.0f);
 		glm::mat4 WorldTransform = glm::mat4(1.0f);
+	};
+
+	struct MaterialBuffer
+	{
+		glm::vec3 AlbedoValue{ 0.8f };
+		float MetallicValue = 0.0f;
+		float RoughnessValue = 1.0f;
+
+		uint32_t AlbedoMapIndex = 0;
+		uint32_t NormalMapIndex = 0;
+		uint32_t MetallicMapIndex = 0;
+		uint32_t RoughnessMapIndex = 0;
 	};
 
 	class Mesh
@@ -53,6 +66,9 @@ namespace VkLibrary {
 
 		Ref<VertexBuffer> m_VertexBuffer;
 		Ref<IndexBuffer> m_IndexBuffer;
+
+		std::vector<MaterialBuffer> m_MaterialBuffers;
+		std::vector<Ref<Texture2D>> m_Textures;
 
 		tinygltf::Model m_Model;
 	};

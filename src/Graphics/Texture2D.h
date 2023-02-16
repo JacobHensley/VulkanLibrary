@@ -6,7 +6,7 @@ namespace VkLibrary {
 
 	struct Texture2DSpecification
 	{
-		const std::filesystem::path& path;
+		std::filesystem::path path;
 
 		std::string DebugName = "Texture2D";
 	};

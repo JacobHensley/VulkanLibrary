@@ -33,7 +33,7 @@ namespace VkLibrary {
 		~Framebuffer();
 
 	public:
-		void Resize(uint32_t width, uint32_t height);
+		bool Resize(uint32_t width, uint32_t height);
 		void CreateFramebuffer();
 
 		inline VkFramebuffer GetFramebuffer() { return m_Framebuffer; }

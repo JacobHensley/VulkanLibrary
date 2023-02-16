@@ -8,6 +8,7 @@ namespace VkLibrary {
 		:	m_Specification(specification)
 	{
 		InitAttachmentImages();
+		Resize(m_Specification.Width, m_Specification.Height);
 	}
 
 	Framebuffer::~Framebuffer()
@@ -60,16 +61,20 @@ namespace VkLibrary {
 		}
 	}
 
-	void Framebuffer::Resize(uint32_t width, uint32_t height)
+	bool Framebuffer::Resize(uint32_t width, uint32_t height)
 	{
 		width *= m_Specification.Scale;
 		height *= m_Specification.Scale;
 
 		if (m_Width == width && m_Height == height)
-			return;	
+			return false;	
 
 		m_Width = width;
 		m_Height = height;
+
+		CreateFramebuffer();
+
+		return true;
 	}
 
 	void Framebuffer::CreateFramebuffer()

@@ -309,9 +309,6 @@ namespace VkLibrary {
 
 		vkCmdEndRenderPass(commandBuffer);
 		vkEndCommandBuffer(commandBuffer);
-
-		//Ref<VulkanDevice> device = Application::GetVulkanDevice();
-		//device->FlushCommandBuffer(m_ActiveCommandBuffer, true);
 	}
 
 	void ImGuiLayer::RenderDrawLists()

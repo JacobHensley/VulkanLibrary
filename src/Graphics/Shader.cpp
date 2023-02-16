@@ -632,7 +632,7 @@ namespace VkLibrary {
 		ShaderStage stage = ShaderStage::NONE;
 
 		std::ifstream stream(path);
-		ASSERT(stream.good(), "");
+		ASSERT(stream.good(), "File either does exist or is empty");
 
 		std::stringstream ss[2];
 		std::string line;

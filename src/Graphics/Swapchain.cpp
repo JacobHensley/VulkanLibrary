@@ -7,7 +7,7 @@
 
 namespace VkLibrary {
 
-	static const int MAX_FRAMES_IN_FLIGHT = 2;
+	static const int MAX_FRAMES_IN_FLIGHT = 1;
 
 	Swapchain::Swapchain()
 	{
@@ -18,6 +18,9 @@ namespace VkLibrary {
 	Swapchain::~Swapchain()
 	{
 		Destroy();
+
+		Ref<VulkanDevice> device = Application::GetVulkanDevice();
+		vkDestroySwapchainKHR(device->GetLogicalDevice(), m_Swapchain, nullptr);
 	}
 
 	void Swapchain::Init(uint32_t width, uint32_t height)

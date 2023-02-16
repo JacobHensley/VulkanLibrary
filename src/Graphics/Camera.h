@@ -20,7 +20,7 @@ namespace VkLibrary {
 	};
 
 	// TODO: Add diffrent movement options
-	// TODO: Add support to updating more camera settings
+	// TODO: Add support for updating more camera settings
 
 	class Camera
 	{

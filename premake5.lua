@@ -89,6 +89,11 @@ project "VulkanLibrary"
 		runtime "Debug"
 		symbols "On"
 
+	defines
+	{
+		"ENABLE_ASSERTS"
+	}
+
 	filter "configurations:Release"
 		runtime "Release"
 		optimize "On"

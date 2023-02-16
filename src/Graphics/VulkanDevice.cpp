@@ -29,14 +29,19 @@ namespace VkLibrary {
 		std::vector<VkPhysicalDevice> devices(deviceCount);
 		vkEnumeratePhysicalDevices(vulkanInstance, &deviceCount, devices.data());
 
+		uint32_t highestDeviceRating = 0;
 		for (VkPhysicalDevice device : devices)
 		{
-			if (IsDeviceSuitable(device))
+			uint32_t rating = IsDeviceSuitable(device);
+			if (rating > highestDeviceRating)
 			{
 				m_PhysicalDevice = device;
-				break;
+				highestDeviceRating = rating;
 			}
+				
 		}
+
+		ASSERT(m_PhysicalDevice != VK_NULL_HANDLE, "Could not find suitable device");
 
 		m_SupportedDeviceExtensions = GetSupportedDeviceExtensions(m_PhysicalDevice);
 		m_SwapChainSupportDetails = QuerySwapChainSupport(m_PhysicalDevice);
@@ -46,8 +51,6 @@ namespace VkLibrary {
 
 		m_QueueFamilyProperties.resize(queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueFamilyCount, m_QueueFamilyProperties.data());
-
-		ASSERT(m_PhysicalDevice != VK_NULL_HANDLE, "Could not find suitable device");
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos = GetQueueCreateInfo(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
@@ -67,7 +70,7 @@ namespace VkLibrary {
 
 		// Required extensions
 		deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-		deviceExtensions.push_back(VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME);
+	//	deviceExtensions.push_back(VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME);
 
 		VkPhysicalDeviceVulkan12Features v12Features{};
 		v12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
@@ -78,7 +81,7 @@ namespace VkLibrary {
 		v12Features.runtimeDescriptorArray = true;
 		v12Features.bufferDeviceAddress = true;
 
-#define RTX 1
+#define RTX 0
 #if RTX
 
 		// Ray tracing features
@@ -152,7 +155,7 @@ namespace VkLibrary {
 		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_CommandPool));
 	}
 
-	bool VulkanDevice::IsDeviceSuitable(VkPhysicalDevice device)
+	uint32_t VulkanDevice::IsDeviceSuitable(VkPhysicalDevice device)
 	{
 		m_AccelerationStructureProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR;
 		m_RayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
@@ -164,7 +167,10 @@ namespace VkLibrary {
 		vkGetPhysicalDeviceProperties2(device, &m_DeviceProperties);
 		vkGetPhysicalDeviceFeatures(device, &m_DeviceFeatures);
 
-		return (m_DeviceProperties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
+		if (m_DeviceProperties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+			return 100;
+		else
+			return 10;
 	}
 
 	uint32_t VulkanDevice::GetQueueFamilyIndex(VkQueueFlags queueFlags)

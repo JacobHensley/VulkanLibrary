@@ -46,7 +46,7 @@ namespace VkLibrary {
 	private:
 		void Init();
 
-		bool IsDeviceSuitable(VkPhysicalDevice device);
+		uint32_t IsDeviceSuitable(VkPhysicalDevice device);
 		uint32_t GetQueueFamilyIndex(VkQueueFlags queueFlags);
 		std::vector<VkDeviceQueueCreateInfo> GetQueueCreateInfo(VkQueueFlags requestedQueueTypes);
 

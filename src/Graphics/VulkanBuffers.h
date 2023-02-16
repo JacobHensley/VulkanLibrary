@@ -104,6 +104,7 @@ namespace VkLibrary {
 
 	public:
 		VkBuffer GetBuffer() { return m_BufferInfo.Buffer; }
+		const VkDescriptorBufferInfo& GetDescriptorBufferInfo() { return m_DescriptorBufferInfo; }
 
 		template<typename T>
 		T* Map()

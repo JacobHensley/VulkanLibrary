@@ -1115,6 +1115,12 @@ VkDescriptorSet ImGui_ImplVulkan_AddTexture(VkSampler sampler, VkImageView image
     return descriptor_set;
 }
 
+const VkDescriptorSetLayout& ImGui_ImplVulkan_GetDescriptorSetLayout()
+{
+	ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();
+    return bd->DescriptorSetLayout;
+}
+
 void ImGui_ImplVulkan_RemoveTexture(VkDescriptorSet descriptor_set)
 {
     ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();

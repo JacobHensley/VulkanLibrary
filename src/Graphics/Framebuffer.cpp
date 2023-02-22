@@ -7,8 +7,10 @@ namespace VkLibrary {
 	Framebuffer::Framebuffer(const FramebufferSpecification& specification)
 		:	m_Specification(specification)
 	{
+		m_Width = m_Specification.Width * m_Specification.Scale;
+		m_Height = m_Specification.Height * m_Specification.Scale;
 		InitAttachmentImages();
-		Resize(m_Specification.Width, m_Specification.Height);
+		CreateFramebuffer();
 	}
 
 	Framebuffer::~Framebuffer()
@@ -21,6 +23,10 @@ namespace VkLibrary {
 
 	void Framebuffer::InitAttachmentImages()
 	{
+		m_ColorAttachments.clear();
+		m_ColorAttachmentCount = 0;
+		m_DepthAttachment = {};
+
 		for (int i = 0; i < m_Specification.AttachmentFormats.size(); i++)
 		{
 			// If attachment is a depth format use specfic attachment otherwise create a new one in the list
@@ -30,8 +36,8 @@ namespace VkLibrary {
 			// Create image to fit attachment
 			ImageSpecification imageSpecification = {};
 			imageSpecification.Data = nullptr;
-			imageSpecification.Width = m_Specification.Width;
-			imageSpecification.Height = m_Specification.Height;
+			imageSpecification.Width = m_Width;
+			imageSpecification.Height = m_Height;
 			imageSpecification.Format = m_Specification.AttachmentFormats[i];
 			imageSpecification.Usage = isDepth ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 			imageSpecification.SampleCount = VK_SAMPLE_COUNT_1_BIT;
@@ -41,7 +47,7 @@ namespace VkLibrary {
 			// Fill attachment description
 			attachment.Description = {};
 			attachment.Description.samples = VK_SAMPLE_COUNT_1_BIT;
-			attachment.Description.loadOp = m_Specification.ClearOnLoad ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			attachment.Description.loadOp = m_Specification.ClearOnLoad ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
 			attachment.Description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 			attachment.Description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			attachment.Description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -79,6 +85,8 @@ namespace VkLibrary {
 
 	void Framebuffer::CreateFramebuffer()
 	{
+		InitAttachmentImages();
+
 		// Collect attachment descriptions
 		std::vector<VkAttachmentDescription> attachmentDescriptions;
 		for (auto& attachment : m_ColorAttachments)

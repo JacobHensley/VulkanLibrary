@@ -17,7 +17,7 @@ namespace VkLibrary {
 
 	void Camera::Update()
 	{
-		const glm::vec2& mousePosition = Input::GetMousePosition();
+		glm::vec2 mousePosition = Input::GetMousePosition();
 		glm::vec2 delta = mousePosition - m_InitialMousePosition;
 		m_InitialMousePosition = mousePosition;
 
@@ -79,6 +79,8 @@ namespace VkLibrary {
 
 		m_Projection = glm::perspectiveFov(glm::radians(m_VerticalFOV), (float)m_ViewportWidth, (float)m_ViewportHeight, m_NearClip, m_FarClip);
 		m_InverseProjection = glm::inverse(m_Projection);
+
+		RecalculateView();
 	}
 
 	void Camera::MousePan(const glm::vec2& delta)

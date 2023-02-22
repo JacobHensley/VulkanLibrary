@@ -56,6 +56,7 @@ namespace VkLibrary {
 
 	void Window::OnUpdate()
     {
+        m_IsMouseScrolling = false;
         glfwPollEvents();
     }
 

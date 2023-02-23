@@ -11,7 +11,7 @@ namespace VkLibrary {
 
 		// Load image from disk
 		int width, height, bpp;
-		stbi_set_flip_vertically_on_load(true);
+		stbi_set_flip_vertically_on_load(false);
 
 		uint8_t* data = stbi_load(m_Specification.path.string().c_str(), &width, &height, &bpp, 4);
 		ASSERT(data, "Failed to load image");

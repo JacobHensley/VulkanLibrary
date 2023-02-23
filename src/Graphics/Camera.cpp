@@ -59,14 +59,14 @@ namespace VkLibrary {
 		m_RotationSpeed = m_Specification.rotationSpeed;
 		m_ZoomSpeed = m_Specification.zoomSpeed;
 
-		m_Position = m_Specification.position;
-		m_Rotation = m_Specification.rotation;
-
 		m_FocalPoint = m_Specification.focalPoint;
-		m_Distance = glm::distance(m_Position, m_FocalPoint);
+		m_Distance = m_Specification.distance;
 
-		m_Yaw = 3.0f * (float)PI / 4.0f;
-		m_Pitch = PI / 4.0f;
+		m_Yaw = m_Specification.yaw * (PI / 180.0f);
+		m_Pitch = m_Specification.pitch * (PI / 180.0f);
+
+		m_Position = CalculatePosition();
+		m_Rotation = glm::eulerAngles(GetOrientation()) * (180.0f / (float)PI);
 	}
 
 	void Camera::Resize(uint32_t width, uint32_t height)

@@ -74,6 +74,7 @@ namespace VkLibrary {
 
 	// TODO: Add debug name support
 	// TODO: Provide support array items in shader reflection and layout generation
+	// TODO: Fix duplicates m_DescriptorSetLayouts
 	// NOTE: Reflection for HLSL is not entirely accurate
 
 	class VertexBufferLayout;

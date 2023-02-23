@@ -13,14 +13,12 @@ namespace VkLibrary {
 		float rotationSpeed = 0.001;
 		float zoomSpeed = 2.0f;
 
-		glm::vec3 position = { -10, 10, 10 };
-		glm::vec3 rotation = glm::vec3(90.0f, 0.0f, 0.0f);
+		float distance = 5.0f;
+		float pitch = 25.0f;
+		float yaw = 35.0f;
 
 		glm::vec3 focalPoint = glm::vec3(0.0f);
 	};
-
-	// TODO: Add diffrent movement options
-	// TODO: Add support for updating more camera settings
 
 	class Camera
 	{
@@ -42,6 +40,7 @@ namespace VkLibrary {
 		const glm::mat4& GetInverseViewProjection() const { return m_InverseViewProjection; }
 
 		const glm::vec3& GetPosition() const { return m_Position; }
+		const glm::vec3& GetRotation() const { return m_Rotation; }
 
 	private:
 		void MousePan(const glm::vec2& delta);

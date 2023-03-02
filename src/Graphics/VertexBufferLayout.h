@@ -12,7 +12,7 @@ namespace VkLibrary {
 	class VertexBufferLayout
 	{
 	public:
-		VertexBufferLayout(const std::vector<ShaderAttributeDescription>& attributes, uint32_t bufferBinding = 0);
+		VertexBufferLayout(const std::map<uint32_t, ShaderAttributeDescription>& attributes, uint32_t bufferBinding = 0);
 		VertexBufferLayout(const std::initializer_list<BufferElement>& elements, uint32_t bufferBinding = 0);
 
 	public:
@@ -21,7 +21,7 @@ namespace VkLibrary {
 		inline void SetStride(uint32_t stride) { m_Stride = stride; }
 
 	private:
-		std::vector<ShaderAttributeDescription> m_Attributes;
+		std::map<uint32_t, ShaderAttributeDescription> m_Attributes;
 		std::vector<BufferElement> m_Elements;
 
 		std::vector<VkVertexInputAttributeDescription> m_VertexInputAttributes;

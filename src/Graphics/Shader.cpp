@@ -96,8 +96,8 @@ namespace VkLibrary {
 			}
 			else if (baseType == spirv_cross::SPIRType::Image)
 			{
-				if (type.image.dim == 1)	     return ShaderUniformType::TEXTURE_2D;
-				else if (type.image.dim == 3)    return ShaderUniformType::TEXTURE_CUBE;
+				if (type.image.dim == 1)	     return ShaderUniformType::STORAGE_IMAGE_2D;
+				else if (type.image.dim == 3)    return ShaderUniformType::STORAGE_IMAGE_CUBE;
 			}
 			else if (baseType == spirv_cross::SPIRType::SampledImage)
 			{
@@ -366,7 +366,7 @@ namespace VkLibrary {
 			// Set shader stage
 			const std::string DXCstage = Utils::ShaderStageToDXC(stage);
 			std::wstring DXCstageW = std::wstring(DXCstage.begin(), DXCstage.end());
-		;
+
 			arguments.push_back(L"-T");
 			arguments.push_back(DXCstageW.c_str());
 			
@@ -454,10 +454,16 @@ namespace VkLibrary {
 			auto& bufferType = compiler.get_type(resource.base_type_id);
 			size_t memberCount = bufferType.member_types.size();
 
-			UniformBufferDescription& buffer = m_UniformBufferDescriptions.emplace_back();
+			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			if (m_UniformBufferDescriptions.find(binding) != m_UniformBufferDescriptions.end())
+			{
+				LOG_WARN("Binding {} already exists ({})", binding, m_UniformBufferDescriptions[binding].Name);
+			}
+
+			UniformBufferDescription& buffer = m_UniformBufferDescriptions[binding];
 			buffer.Name = resource.name;
 			buffer.Size = (uint32_t)compiler.get_declared_struct_size(bufferType);
-			buffer.BindingPoint = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			buffer.BindingPoint = binding;
 			buffer.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 
 			// Get all members of the uniform buffer
@@ -479,10 +485,15 @@ namespace VkLibrary {
 			auto& bufferType = compiler.get_type(resource.base_type_id);
 			size_t memberCount = bufferType.member_types.size();
 
-			StorageBufferDescription& buffer = m_StorageBufferDescriptions.emplace_back();
+			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			if (m_StorageBufferDescriptions.find(binding) != m_StorageBufferDescriptions.end())
+			{
+				LOG_WARN("Binding {} already exists ({})", binding, m_StorageBufferDescriptions[binding].Name);
+			}
 
+			StorageBufferDescription& buffer = m_StorageBufferDescriptions[binding];
 			buffer.Name = resource.name;
-			buffer.BindingPoint = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			buffer.BindingPoint = binding;
 			buffer.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 		}
 
@@ -494,10 +505,10 @@ namespace VkLibrary {
 			{
 				auto& type = compiler.get_type(resource.base_type_id);
 
-				ShaderAttributeDescription& attribute = m_ShaderAttributeDescriptions.emplace_back();
-
+				uint32_t location = compiler.get_decoration(resource.id, spv::DecorationLocation);
+				ShaderAttributeDescription& attribute = m_ShaderAttributeDescriptions[location];
 				attribute.Name = resource.name;
-				attribute.Location = compiler.get_decoration(resource.id, spv::DecorationLocation);
+				attribute.Location = location;
 				attribute.Type = Utils::GetType(type);
 				attribute.Size = GetTypeSize(attribute.Type);
 				attribute.Offset = offset;
@@ -513,10 +524,34 @@ namespace VkLibrary {
 		{
 			auto& type = compiler.get_type(resource.base_type_id);
 
-			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions.emplace_back();
-
+			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			if (m_ShaderResourceDescriptions.find(binding) != m_ShaderResourceDescriptions.end())
+			{
+				LOG_WARN("Binding {} already exists ({})", binding, m_ShaderResourceDescriptions[binding].Name);
+			}
+		
+			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[binding];
 			shaderResource.Name = resource.name;
-			shaderResource.BindingPoint = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			shaderResource.BindingPoint = binding;
+			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			shaderResource.Dimension = type.image.dim;
+			shaderResource.Type = Utils::GetType(type);
+		}
+
+		// Get all storage images
+		for (const spirv_cross::Resource& resource : resources.storage_images)
+		{
+			auto& type = compiler.get_type(resource.base_type_id);
+
+			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			if (m_ShaderResourceDescriptions.find(binding) != m_ShaderResourceDescriptions.end())
+			{
+				LOG_WARN("Binding {} already exists ({})", binding, m_ShaderResourceDescriptions[binding].Name);
+			}
+
+			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[binding];
+			shaderResource.Name = resource.name;
+			shaderResource.BindingPoint = binding;
 			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			shaderResource.Dimension = type.image.dim;
 			shaderResource.Type = Utils::GetType(type);
@@ -527,10 +562,15 @@ namespace VkLibrary {
 		{
 			auto& type = compiler.get_type(resource.base_type_id);
 
-			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions.emplace_back();
+			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			if (m_ShaderResourceDescriptions.find(binding) != m_ShaderResourceDescriptions.end())
+			{
+				LOG_WARN("Binding {} already exists ({})", binding, m_ShaderResourceDescriptions[binding].Name);
+			}
 
+			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[binding];
 			shaderResource.Name = resource.name;
-			shaderResource.BindingPoint = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			shaderResource.BindingPoint = binding;
 			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 		}
 	}
@@ -542,63 +582,68 @@ namespace VkLibrary {
 		std::unordered_map<int, std::vector<VkDescriptorSetLayoutBinding>> descriptorSetLayoutBindings;
 
 		// Create uniform buffer layout bindings
-		for (int i = 0; i < m_UniformBufferDescriptions.size(); i++)
+		for (const auto& [binding, uniformBufferDescriptions] : m_UniformBufferDescriptions)
 		{
 			VkDescriptorSetLayoutBinding layout{};
 
-			layout.binding = m_UniformBufferDescriptions[i].BindingPoint;
+			layout.binding = uniformBufferDescriptions.BindingPoint;
 			layout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			layout.descriptorCount = 1;
 			layout.stageFlags = VK_SHADER_STAGE_ALL;
 			layout.pImmutableSamplers = nullptr;
 
-			descriptorSetLayoutBindings[m_UniformBufferDescriptions[i].DescriptorSetID].push_back(layout);
+			descriptorSetLayoutBindings[uniformBufferDescriptions.DescriptorSetID].push_back(layout);
 		}
 
 		// Create storage buffer layout bindings
-		for (int i = 0; i < m_StorageBufferDescriptions.size(); i++)
+		for (const auto& [binding, storageBufferDescriptions] : m_StorageBufferDescriptions)
 		{
 			VkDescriptorSetLayoutBinding layout{};
 
-			layout.binding = m_StorageBufferDescriptions[i].BindingPoint;
+			layout.binding = storageBufferDescriptions.BindingPoint;
 			layout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			layout.descriptorCount = 1;
 			layout.stageFlags = VK_SHADER_STAGE_ALL;
 			layout.pImmutableSamplers = nullptr;
 
-			descriptorSetLayoutBindings[m_StorageBufferDescriptions[i].DescriptorSetID].push_back(layout);
+			descriptorSetLayoutBindings[storageBufferDescriptions.DescriptorSetID].push_back(layout);
 		}
 
 		// Create acceleration structures layout bindings
-		for (int i = 0; i < m_AccelerationStructureDescriptions.size(); i++)
+		for (const auto& [binding, accelerationStructureDescription] : m_AccelerationStructureDescriptions)
 		{
 			VkDescriptorSetLayoutBinding layout{};
 
-			layout.binding = m_AccelerationStructureDescriptions[i].BindingPoint;
+			layout.binding = accelerationStructureDescription.BindingPoint;
 			layout.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 			layout.descriptorCount = 1;
 			layout.stageFlags = VK_SHADER_STAGE_ALL;
 			layout.pImmutableSamplers = nullptr;
 
-			descriptorSetLayoutBindings[m_AccelerationStructureDescriptions[i].DescriptorSetID].push_back(layout);
+			descriptorSetLayoutBindings[accelerationStructureDescription.DescriptorSetID].push_back(layout);
 		}
 
 		// Create resource layout bindings
-		for (int i = 0; i < m_ShaderResourceDescriptions.size(); i++)
+		for (const auto&[binding, resourceDescription] : m_ShaderResourceDescriptions)
 		{
 			VkDescriptorSetLayoutBinding layout{};
 
-			layout.binding = m_ShaderResourceDescriptions[i].BindingPoint;
-			layout.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			layout.binding = resourceDescription.BindingPoint;
 			layout.descriptorCount = 1;
 			layout.stageFlags = VK_SHADER_STAGE_ALL;
 			layout.pImmutableSamplers = nullptr;
 
-			descriptorSetLayoutBindings[m_ShaderResourceDescriptions[i].DescriptorSetID].push_back(layout);
+			ShaderUniformType type = resourceDescription.Type;
+			if (type == ShaderUniformType::STORAGE_IMAGE_2D || type == ShaderUniformType::STORAGE_IMAGE_CUBE)
+				layout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			else
+				layout.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+			descriptorSetLayoutBindings[resourceDescription.DescriptorSetID].push_back(layout);
 		}
 
 		// Use layout bindings to create descriptor set layouts
-		for (auto const& [DescriptorSetID, bindings] : descriptorSetLayoutBindings)
+		for (const auto& [DescriptorSetID, bindings] : descriptorSetLayoutBindings)
 		{
 			VkDescriptorSetLayoutCreateInfo layoutInfo{};
 			layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;

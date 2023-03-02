@@ -38,10 +38,12 @@ namespace VkLibrary {
 		vertexInputBinding.stride = m_Specification.Layout->GetStride();
 		vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
+		bool isVertexInputEmpty = (uint32_t)m_Specification.Layout->GetVertexInputAttributes().size() == 0;
+
 		// Create vertex input
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexBindingDescriptionCount = isVertexInputEmpty ? 0 : 1;
 		vertexInputInfo.pVertexBindingDescriptions = &vertexInputBinding;
 		vertexInputInfo.vertexAttributeDescriptionCount = (uint32_t)m_Specification.Layout->GetVertexInputAttributes().size();
 		vertexInputInfo.pVertexAttributeDescriptions = m_Specification.Layout->GetVertexInputAttributes().data();

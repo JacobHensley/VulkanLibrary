@@ -12,7 +12,7 @@ namespace VkLibrary {
 
 	enum class ShaderUniformType
 	{
-		NONE = -1, BOOL, INT, UINT, FLOAT, FLOAT2, FLOAT3, FLOAT4, MAT4, TEXTURE_2D, TEXTURE_CUBE, IMAGE_2D, IMAGE_CUBE
+		NONE = -1, BOOL, INT, UINT, FLOAT, FLOAT2, FLOAT3, FLOAT4, MAT4, TEXTURE_2D, TEXTURE_CUBE, STORAGE_IMAGE_2D, STORAGE_IMAGE_CUBE
 	};
 
 	struct ShaderUniformDescription
@@ -95,12 +95,12 @@ namespace VkLibrary {
 		inline const std::vector<VkDescriptorSetLayout>& GetDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
 		inline const std::vector<VkPipelineShaderStageCreateInfo>& GetShaderCreateInfo() const { return m_ShaderStageCreateInfo; }
 
-		inline const std::vector<UniformBufferDescription>& GetUniformBufferDescriptions() const { return m_UniformBufferDescriptions; }
-		inline const std::vector<StorageBufferDescription>& GetStorageBufferDescriptions() const { return m_StorageBufferDescriptions; }
-		inline const std::vector<ShaderResourceDescription>& GetShaderResourceDescriptions() const { return m_ShaderResourceDescriptions; }
-		inline const std::vector<ShaderAttributeDescription>& GetShaderAttributeDescriptions() const { return m_ShaderAttributeDescriptions; }
+		inline const std::map<uint32_t, UniformBufferDescription>& GetUniformBufferDescriptions() const { return m_UniformBufferDescriptions; }
+		inline const std::map<uint32_t, StorageBufferDescription>& GetStorageBufferDescriptions() const { return m_StorageBufferDescriptions; }
+		inline const std::map<uint32_t, ShaderResourceDescription>& GetShaderResourceDescriptions() const { return m_ShaderResourceDescriptions; }
+		inline const std::map<uint32_t, ShaderAttributeDescription>& GetShaderAttributeDescriptions() const { return m_ShaderAttributeDescriptions; }
+		inline const std::map<uint32_t, AccelerationStructureDescription>& GetAccelerationStructureDescriptions() const { return m_AccelerationStructureDescriptions; }
 		inline const std::vector<PushConstantRangeDescription>& GetPushConstantRanges() const { return m_PushConstantBufferRanges; }
-		inline const std::vector<AccelerationStructureDescription>& GetAccelerationStructureDescriptions() const { return m_AccelerationStructureDescriptions; }
 
 		static uint32_t GetTypeSize(ShaderUniformType type);
 
@@ -109,6 +109,7 @@ namespace VkLibrary {
 
 		bool CompileGLSLShaders(const std::unordered_map<ShaderStage, std::string>& shaderSrc);
 		bool CompileHLSLShaders(const std::unordered_map<ShaderStage, std::string>& shaderSrc);
+
 		void ReflectShader(const std::vector<uint32_t>& data, ShaderStage stage);
 		void CreateDescriptorSetLayouts();
 		std::unordered_map<ShaderStage, std::string> SplitShaders(const std::filesystem::path& path);
@@ -127,12 +128,12 @@ namespace VkLibrary {
 		std::vector<VkDescriptorSetLayout> m_DescriptorSetLayouts;
 		std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStageCreateInfo;
 		
-		std::vector<UniformBufferDescription> m_UniformBufferDescriptions;
-		std::vector<StorageBufferDescription> m_StorageBufferDescriptions;
-		std::vector<ShaderResourceDescription> m_ShaderResourceDescriptions;
-		std::vector<ShaderAttributeDescription> m_ShaderAttributeDescriptions;
+		std::map<uint32_t, UniformBufferDescription> m_UniformBufferDescriptions;
+		std::map<uint32_t, StorageBufferDescription> m_StorageBufferDescriptions;
+		std::map<uint32_t, ShaderResourceDescription> m_ShaderResourceDescriptions;
+		std::map<uint32_t, ShaderAttributeDescription> m_ShaderAttributeDescriptions;
+		std::map<uint32_t, AccelerationStructureDescription> m_AccelerationStructureDescriptions;
 		std::vector<PushConstantRangeDescription> m_PushConstantBufferRanges;
-		std::vector<AccelerationStructureDescription> m_AccelerationStructureDescriptions;
 	};
 
 }

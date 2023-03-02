@@ -23,9 +23,14 @@ namespace VkLibrary {
 
 	}
 
-	VertexBufferLayout::VertexBufferLayout(const std::vector<ShaderAttributeDescription>& attributes, uint32_t bufferBinding)
+	VertexBufferLayout::VertexBufferLayout(const std::map<uint32_t, ShaderAttributeDescription>& attributes, uint32_t bufferBinding)
 		: m_Attributes(attributes), m_BufferBinding(bufferBinding)
 	{
+		if (m_Attributes.size() == 0)
+		{
+			return;
+		}
+		
 		m_VertexInputAttributes.resize(m_Attributes.size());
 		for (int i = 0; i < m_Attributes.size(); i++)
 		{
@@ -34,13 +39,18 @@ namespace VkLibrary {
 			m_VertexInputAttributes[i].format = Utils::ShaderTypeToVkFormat(m_Attributes[i].Type);
 			m_VertexInputAttributes[i].offset = m_Attributes[i].Offset;
 		}
-
-		m_Stride = m_Attributes.back().Offset + m_Attributes.back().Size;
+		
+		m_Stride = m_Attributes.rbegin()->second.Offset + m_Attributes.rbegin()->second.Size;
 	}
 
 	VertexBufferLayout::VertexBufferLayout(const std::initializer_list<BufferElement>& elements, uint32_t bufferBinding)
 		: m_Elements(elements), m_BufferBinding(bufferBinding)
 	{
+		if (m_Elements.size() == 0)
+		{
+			return;
+		}
+
 		m_VertexInputAttributes.resize(m_Elements.size());
 
 		for (uint32_t i = 0; i < m_Elements.size(); i++)

@@ -120,6 +120,24 @@ namespace VkLibrary {
 			return (ShaderUniformType)0;
 		}
 
+		static VkDescriptorType TypeToVkDescriptorType(ShaderUniformType type)
+		{
+			switch (type)
+			{
+			case ShaderUniformType::TEXTURE_2D:             return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			case ShaderUniformType::TEXTURE_CUBE:           return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			case ShaderUniformType::STORAGE_IMAGE_2D:       return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			case ShaderUniformType::STORAGE_IMAGE_CUBE:     return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			case ShaderUniformType::UNIFORM_BUFFER:         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			case ShaderUniformType::STORAGE_BUFFER:         return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			case ShaderUniformType::ACCELERATION_STRUCTURE: return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+			}
+
+			ASSERT(false, "Unknown Type");
+			return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+		}
+
+
 		static IDxcCompiler3* s_HLSLCompiler;
 		static IDxcUtils* s_HLSLUtils;
 		static IDxcIncludeHandler* s_DefaultIncludeHandler;
@@ -425,6 +443,42 @@ namespace VkLibrary {
 		return true;
 	}
 
+	// dstSet and pBufferInfo or pImageInfo is set by the user before use
+	VkWriteDescriptorSet Shader::GenerateWriteDescriptor(const std::string& name)
+	{
+		if (m_ResourceNamesAndTypes.find(name) != m_ResourceNamesAndTypes.end())
+		{
+			const auto [binding, type] = m_ResourceNamesAndTypes.at(name);
+
+			VkWriteDescriptorSet writeDescriptor = {};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.descriptorType = Utils::TypeToVkDescriptorType(type);
+			writeDescriptor.dstBinding = binding;
+			writeDescriptor.descriptorCount = 1;
+
+			return writeDescriptor;
+		}
+
+		ASSERT(false, "Could not find shader resource name");
+		return VkWriteDescriptorSet();
+	}
+
+	VkDescriptorSet Shader::AllocateDescriptorSet(VkDescriptorPool pool)
+	{
+		VkDevice device = Application::GetVulkanDevice()->GetLogicalDevice();
+
+		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
+		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descriptorSetAllocateInfo.pSetLayouts = GetDescriptorSetLayouts().data();
+		descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)GetDescriptorSetLayouts().size();
+		descriptorSetAllocateInfo.descriptorPool = pool;
+
+		VkDescriptorSet descriptorSet;
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet));
+
+		return descriptorSet;
+	}
+
 	void Shader::ReflectShader(const std::vector<uint32_t>& data, ShaderStage stage)
 	{
 		spirv_cross::Compiler compiler(data);
@@ -466,6 +520,8 @@ namespace VkLibrary {
 			buffer.BindingPoint = binding;
 			buffer.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 
+			m_ResourceNamesAndTypes[buffer.Name] = {buffer.BindingPoint, ShaderUniformType::UNIFORM_BUFFER};
+
 			// Get all members of the uniform buffer
 			for (int i = 0; i < memberCount; i++)
 			{
@@ -495,6 +551,8 @@ namespace VkLibrary {
 			buffer.Name = resource.name;
 			buffer.BindingPoint = binding;
 			buffer.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+
+			m_ResourceNamesAndTypes[buffer.Name] = { buffer.BindingPoint, ShaderUniformType::STORAGE_BUFFER };
 		}
 
 		// Get all vertex attributes
@@ -536,6 +594,8 @@ namespace VkLibrary {
 			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			shaderResource.Dimension = type.image.dim;
 			shaderResource.Type = Utils::GetType(type);
+
+			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
 		}
 
 		// Get all storage images
@@ -555,6 +615,8 @@ namespace VkLibrary {
 			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			shaderResource.Dimension = type.image.dim;
 			shaderResource.Type = Utils::GetType(type);
+
+			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
 		}
 
 		// Get all acceleration structures
@@ -572,6 +634,8 @@ namespace VkLibrary {
 			shaderResource.Name = resource.name;
 			shaderResource.BindingPoint = binding;
 			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+
+			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
 		}
 	}
 

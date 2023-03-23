@@ -14,7 +14,7 @@ namespace VkLibrary {
 
     ImGuiLayer::~ImGuiLayer()
 	{
-        Ref<VulkanDevice> device = Application::GetApp().GetVulkanDevice();
+        Ref<VulkanDevice> device = Application::GetVulkanDevice();
 
         // Vulkan shutdown
         vkDeviceWaitIdle(device->GetLogicalDevice());

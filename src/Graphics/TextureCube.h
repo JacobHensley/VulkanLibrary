@@ -30,11 +30,11 @@ namespace VkLibrary {
 		uint32_t m_Width = 0;
 		uint32_t m_Height = 0;
 
-		VkImage m_Image = nullptr;
+		VkImage m_Image = VK_NULL_HANDLE;
 		VkFormat m_Format;
 		VkDescriptorImageInfo m_DescriptorImageInfo = {};
 
-		VmaAllocation m_MemoryAllocation = nullptr;
+		VmaAllocation m_MemoryAllocation = VK_NULL_HANDLE;
 
 		TextureCubeSpecification m_Specification;
 	};

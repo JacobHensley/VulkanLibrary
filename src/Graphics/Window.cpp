@@ -62,7 +62,7 @@ namespace VkLibrary {
 
     void Window::InitVulkanSurface()
     {
-        VkInstance instance = Application::GetApp().GetVulkanInstance()->GetInstanceHandle();
+        VkInstance instance = Application::GetVulkanInstance()->GetInstanceHandle();
 
         glfwCreateWindowSurface(instance, m_WindowHandle, nullptr, &m_VulkanSurface);
     }

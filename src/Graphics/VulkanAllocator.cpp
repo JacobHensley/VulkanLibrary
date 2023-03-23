@@ -77,7 +77,7 @@ namespace VkLibrary {
 		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
 		allocatorInfo.physicalDevice = device->GetPhysicalDevice();
 		allocatorInfo.device = device->GetLogicalDevice();
-		allocatorInfo.instance = Application::GetApp().GetVulkanInstance()->GetInstanceHandle();
+		allocatorInfo.instance = Application::GetVulkanInstance()->GetInstanceHandle();
 		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
 		vmaCreateAllocator(&allocatorInfo, &s_Data->Allocator);
@@ -98,7 +98,7 @@ namespace VkLibrary {
 
 	uint64_t VulkanAllocator::GetBufferDeviceAddress(VkBuffer handle)
 	{
-		VkDevice device = Application::GetApp().GetVulkanDevice()->GetLogicalDevice();
+		VkDevice device = Application::GetVulkanDevice()->GetLogicalDevice();
 		VkBufferDeviceAddressInfoKHR buffer_device_address_info{};
 		buffer_device_address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 		buffer_device_address_info.buffer = handle;

@@ -12,7 +12,9 @@ namespace VkLibrary {
 
 	enum class ShaderUniformType
 	{
-		NONE = -1, BOOL, INT, UINT, FLOAT, FLOAT2, FLOAT3, FLOAT4, MAT4, TEXTURE_2D, TEXTURE_CUBE, STORAGE_IMAGE_2D, STORAGE_IMAGE_CUBE
+		NONE = -1, 
+		BOOL, INT, UINT, FLOAT, FLOAT2, FLOAT3, FLOAT4, MAT4, 
+		TEXTURE_2D, TEXTURE_CUBE, STORAGE_IMAGE_2D, STORAGE_IMAGE_CUBE, UNIFORM_BUFFER, STORAGE_BUFFER, ACCELERATION_STRUCTURE
 	};
 
 	struct ShaderUniformDescription
@@ -72,9 +74,7 @@ namespace VkLibrary {
 		uint32_t Offset = 0;
 	};
 
-	// TODO: Add debug name support
 	// TODO: Provide support array items in shader reflection and layout generation
-	// TODO: Fix duplicates m_DescriptorSetLayouts
 	// NOTE: Reflection for HLSL is not entirely accurate
 
 	class VertexBufferLayout;
@@ -89,6 +89,9 @@ namespace VkLibrary {
 	public:
 		inline const std::filesystem::path& GetPath() const { return m_Path; }
 		inline bool CompiledSuccessfully() const { return m_CompilationStatus; }
+
+		VkWriteDescriptorSet GenerateWriteDescriptor(const std::string& name);
+		VkDescriptorSet AllocateDescriptorSet(VkDescriptorPool pool);
 
 		inline const Ref<VertexBufferLayout>& GetVertexBufferLayout() const { return m_VertexBufferLayout; }
 
@@ -128,6 +131,10 @@ namespace VkLibrary {
 		std::vector<VkDescriptorSetLayout> m_DescriptorSetLayouts;
 		std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStageCreateInfo;
 		
+		// Map of name and type of resource to binding point
+		std::unordered_map<std::string, std::tuple<uint32_t, ShaderUniformType>> m_ResourceNamesAndTypes;
+
+		// Map of binding point to resource descriptions
 		std::map<uint32_t, UniformBufferDescription> m_UniformBufferDescriptions;
 		std::map<uint32_t, StorageBufferDescription> m_StorageBufferDescriptions;
 		std::map<uint32_t, ShaderResourceDescription> m_ShaderResourceDescriptions;

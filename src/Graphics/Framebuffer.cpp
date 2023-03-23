@@ -7,10 +7,7 @@ namespace VkLibrary {
 	Framebuffer::Framebuffer(const FramebufferSpecification& specification)
 		:	m_Specification(specification)
 	{
-		m_Width = m_Specification.Width * m_Specification.Scale;
-		m_Height = m_Specification.Height * m_Specification.Scale;
-		InitAttachmentImages();
-		CreateFramebuffer();
+		Resize(m_Specification.Width, m_Specification.Height);
 	}
 
 	Framebuffer::~Framebuffer()
@@ -53,6 +50,8 @@ namespace VkLibrary {
 			attachment.Description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			attachment.Description.format = m_Specification.AttachmentFormats[i];
 			attachment.Description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			if (!m_Specification.ClearOnLoad)
+				attachment.Description.initialLayout = isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			// Final layout
 			if (isDepth || VkTools::IsStencilFormat(m_Specification.AttachmentFormats[i]))
@@ -64,6 +63,7 @@ namespace VkLibrary {
 				attachment.Description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				m_ColorAttachmentCount++;
 			}
+
 		}
 	}
 
@@ -132,24 +132,57 @@ namespace VkLibrary {
 			subpass.pDepthStencilAttachment = &depthAttachmentReference;
 		}
 
-		// Create subpass dependencies
-		std::array<VkSubpassDependency, 2> dependencies;
+		std::vector<VkSubpassDependency> dependencies;
 
-		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependencies[0].dstSubpass = 0;
-		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		if (hasColorAttachment)
+		{
+			{
+				VkSubpassDependency& depedency = dependencies.emplace_back();
+				depedency.srcSubpass = VK_SUBPASS_EXTERNAL;
+				depedency.dstSubpass = 0;
+				depedency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				depedency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				depedency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				depedency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				depedency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			}
+			{
+				VkSubpassDependency& depedency = dependencies.emplace_back();
+				depedency.srcSubpass = 0;
+				depedency.dstSubpass = VK_SUBPASS_EXTERNAL;
+				depedency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				depedency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+				depedency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				depedency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				depedency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			}
+		}
 
-		dependencies[1].srcSubpass = 0;
-		dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		if (hasDepthAttachment)
+		{
+			{
+				VkSubpassDependency& depedency = dependencies.emplace_back();
+				depedency.srcSubpass = VK_SUBPASS_EXTERNAL;
+				depedency.dstSubpass = 0;
+				depedency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				depedency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+				depedency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				depedency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+				depedency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			}
+
+			{
+				VkSubpassDependency& depedency = dependencies.emplace_back();
+				depedency.srcSubpass = 0;
+				depedency.dstSubpass = VK_SUBPASS_EXTERNAL;
+				depedency.srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+				depedency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+				depedency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+				depedency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				depedency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			}
+		}
+
 
 		Ref<VulkanDevice> device = Application::GetVulkanDevice();
 
@@ -160,7 +193,7 @@ namespace VkLibrary {
 		renderPassInfo.attachmentCount = (uint32_t)attachmentDescriptions.size();
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.dependencyCount = 2;
+		renderPassInfo.dependencyCount = (uint32_t)dependencies.size();
 		renderPassInfo.pDependencies = dependencies.data();
 
 		VK_CHECK_RESULT(vkCreateRenderPass(device->GetLogicalDevice(), &renderPassInfo, nullptr, &m_RenderPass));

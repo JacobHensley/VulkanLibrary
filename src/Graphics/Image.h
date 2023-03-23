@@ -6,10 +6,10 @@ namespace VkLibrary {
 
 	struct ImageInfo
 	{
-		VkImage Image = nullptr;
-		VkImageView ImageView = nullptr;
-		VkSampler Sampler = nullptr;
-		VmaAllocation MemoryAllocation = nullptr;
+		VkImage Image = VK_NULL_HANDLE;
+		VkImageView ImageView = VK_NULL_HANDLE;
+		VkSampler Sampler = VK_NULL_HANDLE;
+		VmaAllocation MemoryAllocation = VK_NULL_HANDLE;
 	};
 
 	struct ImageSpecification

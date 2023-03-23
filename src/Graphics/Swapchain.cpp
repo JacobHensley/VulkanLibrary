@@ -308,7 +308,7 @@ namespace VkLibrary {
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.queueFamilyIndex = queueIndices.Graphics;
-		poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		VK_CHECK_RESULT(vkCreateCommandPool(device->GetLogicalDevice(), &poolInfo, nullptr, &m_CommandPool));
 

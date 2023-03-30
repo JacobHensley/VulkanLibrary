@@ -1,6 +1,7 @@
 #pragma once
 #include "Graphics/VulkanBuffers.h"
 #include "Graphics/Texture2D.h"
+#include "Graphics/Material.h"
 #include <tinygltf/tiny_gltf.h>
 #include <glm/glm.hpp>
 #include <filesystem>
@@ -38,6 +39,8 @@ namespace VkLibrary {
 		uint32_t MetallicRoughnessMapIndex = 0;
 	};
 
+	// TODO: Pull m_DefaultShader from some shader libary instead of creating one for every mesh
+	
 	class Mesh
 	{
 	public:
@@ -47,6 +50,7 @@ namespace VkLibrary {
 	public:
 		inline const std::vector<SubMesh>& GetSubMeshes() const { return m_SubMeshes; }
 		
+		inline const std::vector<Material>& GetMaterials() const { return m_Materials; };
 		inline const std::vector<MaterialBuffer>& GetMaterialBuffers() const { return m_MaterialBuffers; };
 		inline const std::vector<Ref<Texture2D>>& GetTextures() const { return m_Textures; }
 
@@ -70,8 +74,11 @@ namespace VkLibrary {
 		Ref<VertexBuffer> m_VertexBuffer;
 		Ref<IndexBuffer> m_IndexBuffer;
 
+		std::vector<Material> m_Materials;
 		std::vector<MaterialBuffer> m_MaterialBuffers;
 		std::vector<Ref<Texture2D>> m_Textures;
+
+		Ref<Shader> m_DefaultShader;
 
 		tinygltf::Model m_Model;
 	};

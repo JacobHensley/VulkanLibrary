@@ -244,10 +244,8 @@ namespace VkLibrary {
 			void* pUserData)
 		{
 			if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-			{
 				LOG_ERROR("Validation layer: {0}", pCallbackData->pMessage);
-				return VK_FALSE;
-			}
+			
 			return VK_FALSE;
 		}
 

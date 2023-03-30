@@ -12,7 +12,8 @@ namespace VkLibrary {
 	};
 
 	// TODO: Add support for multiple texture formats
-	
+	// TODO: Remove data, width and height as it is already in Image
+
 	class Texture2D
 	{
 	public:

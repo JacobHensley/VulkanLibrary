@@ -463,14 +463,17 @@ namespace VkLibrary {
 		return VkWriteDescriptorSet();
 	}
 
-	VkDescriptorSet Shader::AllocateDescriptorSet(VkDescriptorPool pool)
+	VkDescriptorSet Shader::AllocateDescriptorSet(VkDescriptorPool pool, uint32_t set)
 	{
 		VkDevice device = Application::GetVulkanDevice()->GetLogicalDevice();
 
+		const auto& descriptorSetLayouts = GetDescriptorSetLayouts();
+		ASSERT(descriptorSetLayouts.size() > set, "Cound not find specified set");
+
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descriptorSetAllocateInfo.pSetLayouts = GetDescriptorSetLayouts().data();
-		descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)GetDescriptorSetLayouts().size();
+		descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayouts[set];
+		descriptorSetAllocateInfo.descriptorSetCount = 1u;
 		descriptorSetAllocateInfo.descriptorPool = pool;
 
 		VkDescriptorSet descriptorSet;
@@ -484,43 +487,26 @@ namespace VkLibrary {
 		spirv_cross::Compiler compiler(data);
 		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
-		// Get all push constant ranges
-		for (const spirv_cross::Resource& resource : resources.push_constant_buffers)
-		{
-			uint32_t bufferOffset = 0;
-
-			const auto& bufferType = compiler.get_type(resource.base_type_id);
-			size_t bufferSize = compiler.get_declared_struct_size(bufferType);
-
-			// Calculate range offest based on last buffers offset and size
-			if (m_PushConstantBufferRanges.size())
-				bufferOffset = m_PushConstantBufferRanges.back().Offset + m_PushConstantBufferRanges.back().Size;
-
-			auto& pushConstantRange = m_PushConstantBufferRanges.emplace_back();
-			pushConstantRange.ShaderStage = Utils::ShaderStageToVulkan(stage);
-			pushConstantRange.Size = (uint32_t)(bufferSize - bufferOffset);
-			pushConstantRange.Offset = bufferOffset;
-		}
-
 		// Get all uniform buffers
 		for (const spirv_cross::Resource& resource : resources.uniform_buffers)
 		{
 			auto& bufferType = compiler.get_type(resource.base_type_id);
 			size_t memberCount = bufferType.member_types.size();
-
+			uint32_t set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-			if (m_UniformBufferDescriptions.find(binding) != m_UniformBufferDescriptions.end())
+
+			if (m_UniformBufferDescriptions.find(set) != m_UniformBufferDescriptions.end() && m_UniformBufferDescriptions.at(set).find(binding) != m_UniformBufferDescriptions.at(set).end())
 			{
-				LOG_WARN("Binding {} already exists ({})", binding, m_UniformBufferDescriptions[binding].Name);
+				LOG_WARN("Binding {} already exists ({})", binding, m_UniformBufferDescriptions.at(set).at(binding).Name);
 			}
 
-			UniformBufferDescription& buffer = m_UniformBufferDescriptions[binding];
+			UniformBufferDescription& buffer = m_UniformBufferDescriptions[set][binding];
 			buffer.Name = resource.name;
 			buffer.Size = (uint32_t)compiler.get_declared_struct_size(bufferType);
 			buffer.BindingPoint = binding;
 			buffer.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 
-			m_ResourceNamesAndTypes[buffer.Name] = {buffer.BindingPoint, ShaderUniformType::UNIFORM_BUFFER};
+			m_ResourceNamesAndTypes[buffer.Name] = { buffer.BindingPoint, ShaderUniformType::UNIFORM_BUFFER };
 
 			// Get all members of the uniform buffer
 			for (int i = 0; i < memberCount; i++)
@@ -540,19 +526,84 @@ namespace VkLibrary {
 		{
 			auto& bufferType = compiler.get_type(resource.base_type_id);
 			size_t memberCount = bufferType.member_types.size();
-
+			uint32_t set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-			if (m_StorageBufferDescriptions.find(binding) != m_StorageBufferDescriptions.end())
+
+			if (m_StorageBufferDescriptions.find(set) != m_StorageBufferDescriptions.end() && m_StorageBufferDescriptions.at(set).find(binding) != m_StorageBufferDescriptions.at(set).end())
 			{
-				LOG_WARN("Binding {} already exists ({})", binding, m_StorageBufferDescriptions[binding].Name);
+				LOG_WARN("Binding {} already exists ({})", binding, m_StorageBufferDescriptions.at(set).at(binding).Name);
 			}
 
-			StorageBufferDescription& buffer = m_StorageBufferDescriptions[binding];
+			StorageBufferDescription& buffer = m_StorageBufferDescriptions[set][binding];
 			buffer.Name = resource.name;
 			buffer.BindingPoint = binding;
 			buffer.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 
 			m_ResourceNamesAndTypes[buffer.Name] = { buffer.BindingPoint, ShaderUniformType::STORAGE_BUFFER };
+		}
+
+		// Get all sampled images in the shader
+		for (auto& resource : resources.sampled_images)
+		{
+			auto& type = compiler.get_type(resource.base_type_id);
+			uint32_t set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+
+			if (m_ShaderResourceDescriptions.find(set) != m_ShaderResourceDescriptions.end() && m_ShaderResourceDescriptions.at(set).find(binding) != m_ShaderResourceDescriptions.at(set).end())
+			{
+				LOG_WARN("Binding {} already exists ({})", binding, m_ShaderResourceDescriptions.at(set).at(binding).Name);
+			}
+
+			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[set][binding];
+			shaderResource.Name = resource.name;
+			shaderResource.BindingPoint = binding;
+			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			shaderResource.Dimension = type.image.dim;
+			shaderResource.Type = Utils::GetType(type);
+
+			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
+		}
+
+		// Get all storage images
+		for (const spirv_cross::Resource& resource : resources.storage_images)
+		{
+			auto& type = compiler.get_type(resource.base_type_id);
+			uint32_t set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+
+			if (m_ShaderResourceDescriptions.find(set) != m_ShaderResourceDescriptions.end() && m_ShaderResourceDescriptions.at(set).find(binding) != m_ShaderResourceDescriptions.at(set).end())
+			{
+				LOG_WARN("Binding {} already exists ({})", binding, m_ShaderResourceDescriptions.at(set).at(binding).Name);
+			}
+
+			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[set][binding];
+			shaderResource.Name = resource.name;
+			shaderResource.BindingPoint = binding;
+			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			shaderResource.Dimension = type.image.dim;
+			shaderResource.Type = Utils::GetType(type);
+
+			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
+		}
+
+		// Get all acceleration structures
+		for (const spirv_cross::Resource& resource : resources.acceleration_structures)
+		{
+			auto& type = compiler.get_type(resource.base_type_id);
+			uint32_t set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+
+			if (m_ShaderResourceDescriptions.find(set) != m_ShaderResourceDescriptions.end() && m_ShaderResourceDescriptions.at(set).find(binding) != m_ShaderResourceDescriptions.at(set).end())
+			{
+				LOG_WARN("Binding {} already exists ({})", binding, m_ShaderResourceDescriptions.at(set).at(binding).Name);
+			}
+
+			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[set][binding];
+			shaderResource.Name = resource.name;
+			shaderResource.BindingPoint = binding;
+			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+
+			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
 		}
 
 		// Get all vertex attributes
@@ -577,65 +628,22 @@ namespace VkLibrary {
 			m_VertexBufferLayout = CreateRef<VertexBufferLayout>(m_ShaderAttributeDescriptions);
 		}
 
-		// Get all sampled images in the shader
-		for (auto& resource : resources.sampled_images)
+		// Get all push constant ranges
+		for (const spirv_cross::Resource& resource : resources.push_constant_buffers)
 		{
-			auto& type = compiler.get_type(resource.base_type_id);
+			uint32_t bufferOffset = 0;
 
-			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-			if (m_ShaderResourceDescriptions.find(binding) != m_ShaderResourceDescriptions.end())
-			{
-				LOG_WARN("Binding {} already exists ({})", binding, m_ShaderResourceDescriptions[binding].Name);
-			}
-		
-			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[binding];
-			shaderResource.Name = resource.name;
-			shaderResource.BindingPoint = binding;
-			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
-			shaderResource.Dimension = type.image.dim;
-			shaderResource.Type = Utils::GetType(type);
+			const auto& bufferType = compiler.get_type(resource.base_type_id);
+			size_t bufferSize = compiler.get_declared_struct_size(bufferType);
 
-			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
-		}
+			// Calculate range offest based on last buffers offset and size
+			if (m_PushConstantBufferRanges.size())
+				bufferOffset = m_PushConstantBufferRanges.back().Offset + m_PushConstantBufferRanges.back().Size;
 
-		// Get all storage images
-		for (const spirv_cross::Resource& resource : resources.storage_images)
-		{
-			auto& type = compiler.get_type(resource.base_type_id);
-
-			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-			if (m_ShaderResourceDescriptions.find(binding) != m_ShaderResourceDescriptions.end())
-			{
-				LOG_WARN("Binding {} already exists ({})", binding, m_ShaderResourceDescriptions[binding].Name);
-			}
-
-			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[binding];
-			shaderResource.Name = resource.name;
-			shaderResource.BindingPoint = binding;
-			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
-			shaderResource.Dimension = type.image.dim;
-			shaderResource.Type = Utils::GetType(type);
-
-			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
-		}
-
-		// Get all acceleration structures
-		for (const spirv_cross::Resource& resource : resources.acceleration_structures)
-		{
-			auto& type = compiler.get_type(resource.base_type_id);
-
-			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-			if (m_ShaderResourceDescriptions.find(binding) != m_ShaderResourceDescriptions.end())
-			{
-				LOG_WARN("Binding {} already exists ({})", binding, m_ShaderResourceDescriptions[binding].Name);
-			}
-
-			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[binding];
-			shaderResource.Name = resource.name;
-			shaderResource.BindingPoint = binding;
-			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
-
-			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
+			auto& pushConstantRange = m_PushConstantBufferRanges.emplace_back();
+			pushConstantRange.ShaderStage = Utils::ShaderStageToVulkan(stage);
+			pushConstantRange.Size = (uint32_t)(bufferSize - bufferOffset);
+			pushConstantRange.Offset = bufferOffset;
 		}
 	}
 
@@ -646,64 +654,76 @@ namespace VkLibrary {
 		std::unordered_map<int, std::vector<VkDescriptorSetLayoutBinding>> descriptorSetLayoutBindings;
 
 		// Create uniform buffer layout bindings
-		for (const auto& [binding, uniformBufferDescriptions] : m_UniformBufferDescriptions)
+		for (const auto& [set, setUniformBuffers] : m_UniformBufferDescriptions)
 		{
-			VkDescriptorSetLayoutBinding layout{};
+			for (const auto& [binding, uniformBufferDescriptions] : setUniformBuffers)
+			{
+				VkDescriptorSetLayoutBinding layout{};
 
-			layout.binding = uniformBufferDescriptions.BindingPoint;
-			layout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			layout.descriptorCount = 1;
-			layout.stageFlags = VK_SHADER_STAGE_ALL;
-			layout.pImmutableSamplers = nullptr;
+				layout.binding = uniformBufferDescriptions.BindingPoint;
+				layout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				layout.descriptorCount = 1;
+				layout.stageFlags = VK_SHADER_STAGE_ALL;
+				layout.pImmutableSamplers = nullptr;
 
-			descriptorSetLayoutBindings[uniformBufferDescriptions.DescriptorSetID].push_back(layout);
+				descriptorSetLayoutBindings[uniformBufferDescriptions.DescriptorSetID].push_back(layout);
+			}
 		}
 
 		// Create storage buffer layout bindings
-		for (const auto& [binding, storageBufferDescriptions] : m_StorageBufferDescriptions)
+		for (const auto& [set, setStorageBuffers] : m_StorageBufferDescriptions)
 		{
-			VkDescriptorSetLayoutBinding layout{};
+			for (const auto& [binding, storageBufferDescriptions] : setStorageBuffers)
+			{
+				VkDescriptorSetLayoutBinding layout{};
 
-			layout.binding = storageBufferDescriptions.BindingPoint;
-			layout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			layout.descriptorCount = 1;
-			layout.stageFlags = VK_SHADER_STAGE_ALL;
-			layout.pImmutableSamplers = nullptr;
+				layout.binding = storageBufferDescriptions.BindingPoint;
+				layout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+				layout.descriptorCount = 1;
+				layout.stageFlags = VK_SHADER_STAGE_ALL;
+				layout.pImmutableSamplers = nullptr;
 
-			descriptorSetLayoutBindings[storageBufferDescriptions.DescriptorSetID].push_back(layout);
-		}
-
-		// Create acceleration structures layout bindings
-		for (const auto& [binding, accelerationStructureDescription] : m_AccelerationStructureDescriptions)
-		{
-			VkDescriptorSetLayoutBinding layout{};
-
-			layout.binding = accelerationStructureDescription.BindingPoint;
-			layout.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-			layout.descriptorCount = 1;
-			layout.stageFlags = VK_SHADER_STAGE_ALL;
-			layout.pImmutableSamplers = nullptr;
-
-			descriptorSetLayoutBindings[accelerationStructureDescription.DescriptorSetID].push_back(layout);
+				descriptorSetLayoutBindings[storageBufferDescriptions.DescriptorSetID].push_back(layout);
+			}
 		}
 
 		// Create resource layout bindings
-		for (const auto&[binding, resourceDescription] : m_ShaderResourceDescriptions)
+		for (const auto& [set, setResourceDescriptions] : m_ShaderResourceDescriptions)
 		{
-			VkDescriptorSetLayoutBinding layout{};
+			for (const auto& [binding, resourceDescription] : setResourceDescriptions)
+			{
+				VkDescriptorSetLayoutBinding layout{};
 
-			layout.binding = resourceDescription.BindingPoint;
-			layout.descriptorCount = 1;
-			layout.stageFlags = VK_SHADER_STAGE_ALL;
-			layout.pImmutableSamplers = nullptr;
+				layout.binding = resourceDescription.BindingPoint;
+				layout.descriptorCount = 1;
+				layout.stageFlags = VK_SHADER_STAGE_ALL;
+				layout.pImmutableSamplers = nullptr;
 
-			ShaderUniformType type = resourceDescription.Type;
-			if (type == ShaderUniformType::STORAGE_IMAGE_2D || type == ShaderUniformType::STORAGE_IMAGE_CUBE)
-				layout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			else
-				layout.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				ShaderUniformType type = resourceDescription.Type;
+				if (type == ShaderUniformType::STORAGE_IMAGE_2D || type == ShaderUniformType::STORAGE_IMAGE_CUBE)
+					layout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+				else
+					layout.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
-			descriptorSetLayoutBindings[resourceDescription.DescriptorSetID].push_back(layout);
+				descriptorSetLayoutBindings[resourceDescription.DescriptorSetID].push_back(layout);
+			}
+		}
+
+		// Create acceleration structures layout bindings
+		for (const auto& [set, setAccelerationStructures] : m_AccelerationStructureDescriptions)
+		{
+			for (const auto& [binding, accelerationStructureDescription] : setAccelerationStructures)
+			{
+				VkDescriptorSetLayoutBinding layout{};
+
+				layout.binding = accelerationStructureDescription.BindingPoint;
+				layout.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+				layout.descriptorCount = 1;
+				layout.stageFlags = VK_SHADER_STAGE_ALL;
+				layout.pImmutableSamplers = nullptr;
+
+				descriptorSetLayoutBindings[accelerationStructureDescription.DescriptorSetID].push_back(layout);
+			}
 		}
 
 		// Use layout bindings to create descriptor set layouts

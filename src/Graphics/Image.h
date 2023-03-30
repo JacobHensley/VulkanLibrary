@@ -25,9 +25,9 @@ namespace VkLibrary {
 		std::string DebugName = "Image";
 	};
 
-	// TODO: Add option to enable or disable the use of a staging buffer
 	// TODO: Check a resource release queue or intrusive refrence counting system before releasing image
 	// TODO: Change size according to image format
+	// TODO: Create a useage enum that indicates whether the image is going to be used in a framebuffer, storage image, texture, etc.
 
 	class Image
 	{

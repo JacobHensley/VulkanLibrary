@@ -104,6 +104,8 @@ namespace VkLibrary {
 
 			// Submit and free command buffer
 			device->FlushCommandBuffer(commandBuffer, true);
+
+			m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		}
 
 		// Create image view
@@ -169,34 +171,10 @@ namespace VkLibrary {
 			// Submit and free command buffer
 			device->FlushCommandBuffer(commandBuffer, true);
 		}
-		else
+		else if ((m_Specification.Usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) || (m_Specification.Usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT))
 		{
+			// If the image is made for a framebuffer then set its layout
 			m_DescriptorImageInfo.imageLayout = isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-			VkCommandBuffer commandBuffer = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-
-			// Range of image to copy (only the first mip)
-			VkImageSubresourceRange range;
-			range.aspectMask = aspectFlag;
-			range.baseMipLevel = 0;
-			range.levelCount = 1;
-			range.baseArrayLayer = 0;
-			range.layerCount = m_Specification.LayerCount;
-
-			// Transfer image from UNDEFINED to final layout
-			VkTools::InsertImageMemoryBarrier(
-				commandBuffer,
-				m_ImageInfo.Image,
-				0,
-				VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				m_DescriptorImageInfo.imageLayout,
-				VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				range);
-
-			// Submit and free command buffer
-			device->FlushCommandBuffer(commandBuffer, true);
 		}
 
 		m_DescriptorImageInfo.imageView = m_ImageInfo.ImageView;

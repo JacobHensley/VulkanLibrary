@@ -5,16 +5,16 @@ namespace VkLibrary {
 
 	namespace Utils {
 
-		static VkFormat ShaderTypeToVkFormat(ShaderUniformType type)
+		static VkFormat ShaderTypeToVkFormat(ShaderDescriptorType type)
 		{
 			switch (type)
 			{
-			case VkLibrary::ShaderUniformType::INT:    return VK_FORMAT_R32_SINT;
-			case VkLibrary::ShaderUniformType::UINT:   return VK_FORMAT_R32_UINT;
-			case VkLibrary::ShaderUniformType::FLOAT:  return VK_FORMAT_R32_SFLOAT;
-			case VkLibrary::ShaderUniformType::FLOAT2: return VK_FORMAT_R32G32_SFLOAT;
-			case VkLibrary::ShaderUniformType::FLOAT3: return VK_FORMAT_R32G32B32_SFLOAT;
-			case VkLibrary::ShaderUniformType::FLOAT4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case VkLibrary::ShaderDescriptorType::INT:    return VK_FORMAT_R32_SINT;
+			case VkLibrary::ShaderDescriptorType::UINT:   return VK_FORMAT_R32_UINT;
+			case VkLibrary::ShaderDescriptorType::FLOAT:  return VK_FORMAT_R32_SFLOAT;
+			case VkLibrary::ShaderDescriptorType::FLOAT2: return VK_FORMAT_R32G32_SFLOAT;
+			case VkLibrary::ShaderDescriptorType::FLOAT3: return VK_FORMAT_R32G32B32_SFLOAT;
+			case VkLibrary::ShaderDescriptorType::FLOAT4: return VK_FORMAT_R32G32B32A32_SFLOAT;
 			}
 
 			ASSERT(false, "Unknown Type");

@@ -10,61 +10,21 @@ namespace VkLibrary {
 		NONE = -1, VERTEX, FRAGMENT, COMPUTE, RAYGEN, ANY_HIT, CLOSEST_HIT, MISS
 	};
 
-	enum class ShaderUniformType
+	enum class ShaderDescriptorType
 	{
 		NONE = -1, 
-		BOOL, INT, UINT, FLOAT, FLOAT2, FLOAT3, FLOAT4, MAT4, 
-		TEXTURE_2D, TEXTURE_CUBE, STORAGE_IMAGE_2D, STORAGE_IMAGE_CUBE, UNIFORM_BUFFER, STORAGE_BUFFER, ACCELERATION_STRUCTURE
-	};
-
-	struct ShaderUniformDescription
-	{
-		std::string Name;
-		ShaderUniformType Type;
-		uint32_t Size;
-		uint32_t Offset;
+		BOOL, INT, UINT, FLOAT, FLOAT2, FLOAT3, FLOAT4, MAT4,
+		TEXTURE_2D, TEXTURE_CUBE, STORAGE_IMAGE_2D, STORAGE_IMAGE_CUBE, ACCELERATION_STRUCTURE,
+		UNIFORM_BUFFER, STORAGE_BUFFER
 	};
 
 	struct ShaderAttributeDescription
 	{
 		std::string Name;
-		ShaderUniformType Type;
+		ShaderDescriptorType Type;
 		uint32_t Size;
 		uint32_t Offset;
 		uint32_t Location;
-	};
-
-	struct UniformBufferDescription
-	{
-		std::string Name;
-		uint32_t Size;
-		uint32_t BindingPoint;
-		uint32_t DescriptorSetID;
-
-		std::vector<ShaderUniformDescription> Uniforms;
-	};
-
-	struct StorageBufferDescription
-	{
-		std::string Name;
-		uint32_t BindingPoint;
-		uint32_t DescriptorSetID;
-	};
-
-	struct ShaderResourceDescription
-	{
-		std::string Name;
-		ShaderUniformType Type;
-		uint32_t BindingPoint;
-		uint32_t DescriptorSetID;
-		uint32_t Dimension;
-	};
-
-	struct AccelerationStructureDescription
-	{
-		std::string Name;
-		uint32_t BindingPoint;
-		uint32_t DescriptorSetID;
 	};
 
 	struct PushConstantRangeDescription
@@ -72,6 +32,40 @@ namespace VkLibrary {
 		VkShaderStageFlagBits ShaderStage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
 		uint32_t Size = 0;
 		uint32_t Offset = 0;
+	};
+
+	struct ShaderDescriptor
+	{
+		std::string Name;
+		ShaderDescriptorType Type = ShaderDescriptorType::NONE;
+		uint32_t Size = -1;
+		uint32_t Offset = -1;
+	};
+
+	struct ShaderResourceDescription
+	{
+		std::string Name;
+		ShaderDescriptorType Type = ShaderDescriptorType::NONE;
+		uint32_t Binding = -1;
+		uint32_t Set = -1;
+	};
+
+	struct ShaderBufferDescription
+	{
+		std::string Name;
+		ShaderDescriptorType Type = ShaderDescriptorType::NONE;
+		uint32_t Binding = -1;
+		uint32_t Set = -1;
+		uint32_t Size = -1;
+
+		std::vector<ShaderDescriptor> Members;
+	};
+
+	struct ShaderDescriptorMetadata
+	{
+		ShaderDescriptorType Type = ShaderDescriptorType::NONE;
+		uint32_t Set = -1;
+		uint32_t Binding = -1;
 	};
 
 	// TODO: Provide support array items in shader reflection and layout generation
@@ -90,23 +84,24 @@ namespace VkLibrary {
 		inline const std::filesystem::path& GetPath() const { return m_Path; }
 		inline bool CompiledSuccessfully() const { return m_CompilationStatus; }
 
-		VkWriteDescriptorSet GenerateWriteDescriptor(const std::string& name);
+		const ShaderResourceDescription& FindResourceDescription(const std::string& name);
+		const ShaderBufferDescription& FindBufferDescription(const std::string& name);
+		const VkWriteDescriptorSet& FindWriteDescriptorSet(const std::string& name);
+
 		VkDescriptorSet AllocateDescriptorSet(VkDescriptorPool pool, uint32_t set);
+		const std::map<uint32_t, std::map<uint32_t, VkWriteDescriptorSet>>& GetWriteDescriptorSets() const { return m_WriteDescriptorSets; }
 
 		inline const Ref<VertexBufferLayout>& GetVertexBufferLayout() const { return m_VertexBufferLayout; }
-
 		inline const std::vector<VkDescriptorSetLayout>& GetDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
 		inline const std::vector<VkPipelineShaderStageCreateInfo>& GetShaderCreateInfo() const { return m_ShaderStageCreateInfo; }
 
-		inline const std::map<uint32_t, std::map<uint32_t, UniformBufferDescription>>& GetUniformBufferDescriptions() const { return m_UniformBufferDescriptions; }
-		inline const std::map<uint32_t, std::map<uint32_t, StorageBufferDescription>>& GetStorageBufferDescriptions() const { return m_StorageBufferDescriptions; }
+		inline const std::map<uint32_t, std::map<uint32_t, ShaderBufferDescription>>& GetShaderBufferDescriptions() const { return m_ShaderBufferDescriptions; }
 		inline const std::map<uint32_t, std::map<uint32_t, ShaderResourceDescription>>& GetShaderResourceDescriptions() const { return m_ShaderResourceDescriptions; }
-		inline const std::map<uint32_t, std::map<uint32_t, AccelerationStructureDescription>>& GetAccelerationStructureDescriptions() const { return m_AccelerationStructureDescriptions; }
-	
+
 		inline const std::map<uint32_t, ShaderAttributeDescription>& GetShaderAttributeDescriptions() const { return m_ShaderAttributeDescriptions; }
 		inline const std::vector<PushConstantRangeDescription>& GetPushConstantRanges() const { return m_PushConstantBufferRanges; }
 
-		static uint32_t GetTypeSize(ShaderUniformType type);
+		static uint32_t GetTypeSize(ShaderDescriptorType type);
 
 	private:
 		void Init();
@@ -115,7 +110,8 @@ namespace VkLibrary {
 		bool CompileHLSLShaders(const std::unordered_map<ShaderStage, std::string>& shaderSrc);
 
 		void ReflectShader(const std::vector<uint32_t>& data, ShaderStage stage);
-		void CreateDescriptorSetLayouts();
+		void GenerateDescriptorData();
+
 		std::unordered_map<ShaderStage, std::string> SplitShaders(const std::filesystem::path& path);
 
 	private:
@@ -128,21 +124,18 @@ namespace VkLibrary {
 		const std::string m_HLSLEntryPoint;
 
 		Ref<VertexBufferLayout> m_VertexBufferLayout;
-
 		std::vector<VkDescriptorSetLayout> m_DescriptorSetLayouts;
 		std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStageCreateInfo;
+		std::map<uint32_t, std::map<uint32_t, VkWriteDescriptorSet>> m_WriteDescriptorSets;
 		
-		// Map of name and type of resource to binding point
-		std::unordered_map<std::string, std::tuple<uint32_t, ShaderUniformType>> m_ResourceNamesAndTypes;
-
-		// Map of set->binding point to resource descriptions
-		std::map<uint32_t, std::map<uint32_t, UniformBufferDescription>> m_UniformBufferDescriptions;
-		std::map<uint32_t, std::map<uint32_t, StorageBufferDescription>> m_StorageBufferDescriptions;
+		// Map of set->binding to resource descriptions
+		std::map<uint32_t, std::map<uint32_t, ShaderBufferDescription>> m_ShaderBufferDescriptions;
 		std::map<uint32_t, std::map<uint32_t, ShaderResourceDescription>> m_ShaderResourceDescriptions;
-		std::map<uint32_t, std::map<uint32_t, AccelerationStructureDescription>> m_AccelerationStructureDescriptions;
 
 		std::map<uint32_t, ShaderAttributeDescription> m_ShaderAttributeDescriptions;
 		std::vector<PushConstantRangeDescription> m_PushConstantBufferRanges;
+
+		std::unordered_map<std::string, ShaderDescriptorMetadata> m_ShaderDescriptorMetadata;
 	};
 
 }

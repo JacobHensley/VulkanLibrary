@@ -76,7 +76,7 @@ namespace VkLibrary {
 			return "";
 		}
 
-		static ShaderUniformType GetType(spirv_cross::SPIRType type)
+		static ShaderDescriptorType GetType(spirv_cross::SPIRType type)
 		{
 			spirv_cross::SPIRType::BaseType baseType = type.basetype;
 
@@ -84,53 +84,57 @@ namespace VkLibrary {
 			{
 				if (type.columns == 1)
 				{
-					if (type.vecsize == 1)	    return ShaderUniformType::FLOAT;
-					else if (type.vecsize == 2) return ShaderUniformType::FLOAT2;
-					else if (type.vecsize == 3) return ShaderUniformType::FLOAT3;
-					else if (type.vecsize == 4) return ShaderUniformType::FLOAT4;
+					if (type.vecsize == 1)	    return ShaderDescriptorType::FLOAT;
+					else if (type.vecsize == 2) return ShaderDescriptorType::FLOAT2;
+					else if (type.vecsize == 3) return ShaderDescriptorType::FLOAT3;
+					else if (type.vecsize == 4) return ShaderDescriptorType::FLOAT4;
 				}
 				else
 				{
-					return ShaderUniformType::MAT4;
+					return ShaderDescriptorType::MAT4;
 				}
 			}
 			else if (baseType == spirv_cross::SPIRType::Image)
 			{
-				if (type.image.dim == 1)	     return ShaderUniformType::STORAGE_IMAGE_2D;
-				else if (type.image.dim == 3)    return ShaderUniformType::STORAGE_IMAGE_CUBE;
+				if (type.image.dim == 1)	     return ShaderDescriptorType::STORAGE_IMAGE_2D;
+				else if (type.image.dim == 3)    return ShaderDescriptorType::STORAGE_IMAGE_CUBE;
 			}
 			else if (baseType == spirv_cross::SPIRType::SampledImage)
 			{
-				if (type.image.dim == 1)		 return ShaderUniformType::TEXTURE_2D;
-				else if (type.image.dim == 3)    return ShaderUniformType::TEXTURE_CUBE;
+				if (type.image.dim == 1)		 return ShaderDescriptorType::TEXTURE_2D;
+				else if (type.image.dim == 3)    return ShaderDescriptorType::TEXTURE_CUBE;
+			}
+			else if (baseType == spirv_cross::SPIRType::AccelerationStructure)
+			{
+				return ShaderDescriptorType::ACCELERATION_STRUCTURE;
 			}
 			else if (baseType == spirv_cross::SPIRType::Int)
 			{
-				return ShaderUniformType::INT;
+				return ShaderDescriptorType::INT;
 			}
 			else if (baseType == spirv_cross::SPIRType::UInt)
 			{
-				return ShaderUniformType::UINT;
+				return ShaderDescriptorType::UINT;
 			}
 			else if (baseType == spirv_cross::SPIRType::Boolean)
 			{
-				return ShaderUniformType::BOOL;
+				return ShaderDescriptorType::BOOL;
 			}
 
-			return (ShaderUniformType)0;
+			return (ShaderDescriptorType)0;
 		}
 
-		static VkDescriptorType TypeToVkDescriptorType(ShaderUniformType type)
+		static VkDescriptorType TypeToVkDescriptorType(ShaderDescriptorType type)
 		{
 			switch (type)
 			{
-			case ShaderUniformType::TEXTURE_2D:             return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			case ShaderUniformType::TEXTURE_CUBE:           return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			case ShaderUniformType::STORAGE_IMAGE_2D:       return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			case ShaderUniformType::STORAGE_IMAGE_CUBE:     return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			case ShaderUniformType::UNIFORM_BUFFER:         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			case ShaderUniformType::STORAGE_BUFFER:         return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			case ShaderUniformType::ACCELERATION_STRUCTURE: return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+			case ShaderDescriptorType::TEXTURE_2D:             return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			case ShaderDescriptorType::TEXTURE_CUBE:           return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			case ShaderDescriptorType::STORAGE_IMAGE_2D:       return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			case ShaderDescriptorType::STORAGE_IMAGE_CUBE:     return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			case ShaderDescriptorType::UNIFORM_BUFFER:         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			case ShaderDescriptorType::STORAGE_BUFFER:         return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			case ShaderDescriptorType::ACCELERATION_STRUCTURE: return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 			}
 
 			ASSERT(false, "Unknown Type");
@@ -282,7 +286,7 @@ namespace VkLibrary {
 
 		ASSERT(m_CompilationStatus, "Failed to initialize shader");
 
-		CreateDescriptorSetLayouts();
+		GenerateDescriptorData();
 	}
 
 	bool Shader::CompileGLSLShaders(const std::unordered_map<ShaderStage, std::string>& shaderSrc)
@@ -443,24 +447,43 @@ namespace VkLibrary {
 		return true;
 	}
 
-	// dstSet and pBufferInfo or pImageInfo is set by the user before use
-	VkWriteDescriptorSet Shader::GenerateWriteDescriptor(const std::string& name)
+	const ShaderResourceDescription& Shader::FindResourceDescription(const std::string& name)
 	{
-		if (m_ResourceNamesAndTypes.find(name) != m_ResourceNamesAndTypes.end())
+		ShaderDescriptorMetadata metadata = m_ShaderDescriptorMetadata.at(name);
+
+		if (m_ShaderResourceDescriptions.find(metadata.Set) == m_ShaderResourceDescriptions.end() && m_ShaderResourceDescriptions.at(metadata.Set).find(metadata.Binding) == m_ShaderResourceDescriptions.at(metadata.Set).end())
 		{
-			const auto [binding, type] = m_ResourceNamesAndTypes.at(name);
-
-			VkWriteDescriptorSet writeDescriptor = {};
-			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptor.descriptorType = Utils::TypeToVkDescriptorType(type);
-			writeDescriptor.dstBinding = binding;
-			writeDescriptor.descriptorCount = 1;
-
-			return writeDescriptor;
+			LOG_WARN("{} could not be found in resource descriptions", name);
+			return ShaderResourceDescription();
 		}
 
-		ASSERT(false, "Could not find shader resource name");
-		return VkWriteDescriptorSet();
+		return m_ShaderResourceDescriptions.at(metadata.Set).at(metadata.Binding);
+	}
+
+	const ShaderBufferDescription& Shader::FindBufferDescription(const std::string& name)
+	{
+		ShaderDescriptorMetadata metadata = m_ShaderDescriptorMetadata.at(name);
+
+		if (m_ShaderBufferDescriptions.find(metadata.Set) == m_ShaderBufferDescriptions.end() && m_ShaderBufferDescriptions.at(metadata.Set).find(metadata.Binding) == m_ShaderBufferDescriptions.at(metadata.Set).end())
+		{
+			LOG_WARN("{} could not be found in buffer descriptions", name);
+			return ShaderBufferDescription();
+		}
+
+		return m_ShaderBufferDescriptions.at(metadata.Set).at(metadata.Binding);
+	}
+
+	const VkWriteDescriptorSet& Shader::FindWriteDescriptorSet(const std::string& name)
+	{
+		ShaderDescriptorMetadata metadata = m_ShaderDescriptorMetadata.at(name);
+
+		if (m_WriteDescriptorSets.find(metadata.Set) == m_WriteDescriptorSets.end() && m_WriteDescriptorSets.at(metadata.Set).find(metadata.Binding) == m_WriteDescriptorSets.at(metadata.Set).end())
+		{
+			LOG_WARN("{} could not be found in write descriptor sets", name);
+			return VkWriteDescriptorSet();
+		}
+
+		return m_WriteDescriptorSets.at(metadata.Set).at(metadata.Binding);
 	}
 
 	VkDescriptorSet Shader::AllocateDescriptorSet(VkDescriptorPool pool, uint32_t set)
@@ -495,29 +518,28 @@ namespace VkLibrary {
 			uint32_t set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-			if (m_UniformBufferDescriptions.find(set) != m_UniformBufferDescriptions.end() && m_UniformBufferDescriptions.at(set).find(binding) != m_UniformBufferDescriptions.at(set).end())
+			if (m_ShaderBufferDescriptions.find(set) != m_ShaderBufferDescriptions.end() && m_ShaderBufferDescriptions.at(set).find(binding) != m_ShaderBufferDescriptions.at(set).end())
 			{
-				LOG_WARN("Binding {} already exists ({})", binding, m_UniformBufferDescriptions.at(set).at(binding).Name);
+				LOG_WARN("Binding {} already exists ({})", binding, m_ShaderBufferDescriptions.at(set).at(binding).Name);
 			}
 
-			UniformBufferDescription& buffer = m_UniformBufferDescriptions[set][binding];
+			ShaderBufferDescription& buffer = m_ShaderBufferDescriptions[set][binding];
 			buffer.Name = resource.name;
 			buffer.Size = (uint32_t)compiler.get_declared_struct_size(bufferType);
-			buffer.BindingPoint = binding;
-			buffer.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
-
-			m_ResourceNamesAndTypes[buffer.Name] = { buffer.BindingPoint, ShaderUniformType::UNIFORM_BUFFER };
+			buffer.Binding = binding;
+			buffer.Set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			buffer.Type = ShaderDescriptorType::UNIFORM_BUFFER;
 
 			// Get all members of the uniform buffer
 			for (int i = 0; i < memberCount; i++)
 			{
-				ShaderUniformDescription uniform;
-				uniform.Name = compiler.get_member_name(bufferType.self, i);
-				uniform.Size = (uint32_t)compiler.get_declared_struct_member_size(bufferType, i);
-				uniform.Type = Utils::GetType(compiler.get_type(bufferType.member_types[i]));
-				uniform.Offset = compiler.type_struct_member_offset(bufferType, i);
+				ShaderDescriptor member;
+				member.Name = compiler.get_member_name(bufferType.self, i);
+				member.Size = (uint32_t)compiler.get_declared_struct_member_size(bufferType, i);
+				member.Type = Utils::GetType(compiler.get_type(bufferType.member_types[i]));
+				member.Offset = compiler.type_struct_member_offset(bufferType, i);
 
-				buffer.Uniforms.push_back(uniform);
+				buffer.Members.push_back(member);
 			}
 		}
 
@@ -529,17 +551,29 @@ namespace VkLibrary {
 			uint32_t set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 
-			if (m_StorageBufferDescriptions.find(set) != m_StorageBufferDescriptions.end() && m_StorageBufferDescriptions.at(set).find(binding) != m_StorageBufferDescriptions.at(set).end())
+			if (m_ShaderBufferDescriptions.find(set) != m_ShaderBufferDescriptions.end() && m_ShaderBufferDescriptions.at(set).find(binding) != m_ShaderBufferDescriptions.at(set).end())
 			{
-				LOG_WARN("Binding {} already exists ({})", binding, m_StorageBufferDescriptions.at(set).at(binding).Name);
+				LOG_WARN("Binding {} already exists ({})", binding, m_ShaderBufferDescriptions.at(set).at(binding).Name);
 			}
 
-			StorageBufferDescription& buffer = m_StorageBufferDescriptions[set][binding];
+			ShaderBufferDescription& buffer = m_ShaderBufferDescriptions[set][binding];
 			buffer.Name = resource.name;
-			buffer.BindingPoint = binding;
-			buffer.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			buffer.Size = (uint32_t)compiler.get_declared_struct_size(bufferType);
+			buffer.Binding = binding;
+			buffer.Set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			buffer.Type = ShaderDescriptorType::STORAGE_BUFFER;
 
-			m_ResourceNamesAndTypes[buffer.Name] = { buffer.BindingPoint, ShaderUniformType::STORAGE_BUFFER };
+			// Get all members of the uniform buffer
+			for (int i = 0; i < memberCount; i++)
+			{
+				ShaderDescriptor member;
+				member.Name = compiler.get_member_name(bufferType.self, i);
+				member.Size = (uint32_t)compiler.get_declared_struct_member_size(bufferType, i);
+				member.Type = Utils::GetType(compiler.get_type(bufferType.member_types[i]));
+				member.Offset = compiler.type_struct_member_offset(bufferType, i);
+
+				buffer.Members.push_back(member);
+			}
 		}
 
 		// Get all sampled images in the shader
@@ -556,12 +590,9 @@ namespace VkLibrary {
 
 			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[set][binding];
 			shaderResource.Name = resource.name;
-			shaderResource.BindingPoint = binding;
-			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
-			shaderResource.Dimension = type.image.dim;
+			shaderResource.Binding = binding;
+			shaderResource.Set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			shaderResource.Type = Utils::GetType(type);
-
-			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
 		}
 
 		// Get all storage images
@@ -578,12 +609,9 @@ namespace VkLibrary {
 
 			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[set][binding];
 			shaderResource.Name = resource.name;
-			shaderResource.BindingPoint = binding;
-			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
-			shaderResource.Dimension = type.image.dim;
+			shaderResource.Binding = binding;
+			shaderResource.Set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			shaderResource.Type = Utils::GetType(type);
-
-			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
 		}
 
 		// Get all acceleration structures
@@ -600,10 +628,9 @@ namespace VkLibrary {
 
 			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[set][binding];
 			shaderResource.Name = resource.name;
-			shaderResource.BindingPoint = binding;
-			shaderResource.DescriptorSetID = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
-
-			m_ResourceNamesAndTypes[shaderResource.Name] = { shaderResource.BindingPoint, shaderResource.Type };
+			shaderResource.Binding = binding;
+			shaderResource.Set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			shaderResource.Type = Utils::GetType(type);
 		}
 
 		// Get all vertex attributes
@@ -647,43 +674,43 @@ namespace VkLibrary {
 		}
 	}
 
-	void Shader::CreateDescriptorSetLayouts()
+	void Shader::GenerateDescriptorData()
 	{
 		VkDevice device = Application::GetVulkanDevice()->GetLogicalDevice();
 
 		std::unordered_map<int, std::vector<VkDescriptorSetLayoutBinding>> descriptorSetLayoutBindings;
 
-		// Create uniform buffer layout bindings
-		for (const auto& [set, setUniformBuffers] : m_UniformBufferDescriptions)
+		// Create buffer layout bindings
+		for (const auto& [set, setBufferDescriptions] : m_ShaderBufferDescriptions)
 		{
-			for (const auto& [binding, uniformBufferDescriptions] : setUniformBuffers)
+			for (const auto& [binding, bufferDescriptions] : setBufferDescriptions)
 			{
+				// Generate Layout binding
 				VkDescriptorSetLayoutBinding layout{};
-
-				layout.binding = uniformBufferDescriptions.BindingPoint;
-				layout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				layout.binding = bufferDescriptions.Binding;
+				layout.descriptorType = Utils::TypeToVkDescriptorType(bufferDescriptions.Type);
 				layout.descriptorCount = 1;
 				layout.stageFlags = VK_SHADER_STAGE_ALL;
 				layout.pImmutableSamplers = nullptr;
 
-				descriptorSetLayoutBindings[uniformBufferDescriptions.DescriptorSetID].push_back(layout);
-			}
-		}
+				descriptorSetLayoutBindings[bufferDescriptions.Set].push_back(layout);
 
-		// Create storage buffer layout bindings
-		for (const auto& [set, setStorageBuffers] : m_StorageBufferDescriptions)
-		{
-			for (const auto& [binding, storageBufferDescriptions] : setStorageBuffers)
-			{
-				VkDescriptorSetLayoutBinding layout{};
+				// Generate write descriptor
+				VkWriteDescriptorSet writeDescriptor = {};
+				writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				writeDescriptor.descriptorType = Utils::TypeToVkDescriptorType(bufferDescriptions.Type);
+				writeDescriptor.dstBinding = binding;
+				writeDescriptor.descriptorCount = 1;
 
-				layout.binding = storageBufferDescriptions.BindingPoint;
-				layout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-				layout.descriptorCount = 1;
-				layout.stageFlags = VK_SHADER_STAGE_ALL;
-				layout.pImmutableSamplers = nullptr;
+				m_WriteDescriptorSets[bufferDescriptions.Set][bufferDescriptions.Binding] = writeDescriptor;
 
-				descriptorSetLayoutBindings[storageBufferDescriptions.DescriptorSetID].push_back(layout);
+				// Generate descriptor metadata
+				ShaderDescriptorMetadata metadata = {};
+				metadata.Type = bufferDescriptions.Type;
+				metadata.Set = bufferDescriptions.Set;
+				metadata.Binding = bufferDescriptions.Binding;
+
+				m_ShaderDescriptorMetadata[bufferDescriptions.Name] = metadata;
 			}
 		}
 
@@ -692,52 +719,47 @@ namespace VkLibrary {
 		{
 			for (const auto& [binding, resourceDescription] : setResourceDescriptions)
 			{
+				// Generate Layout binding
 				VkDescriptorSetLayoutBinding layout{};
-
-				layout.binding = resourceDescription.BindingPoint;
+				layout.binding = resourceDescription.Binding;
+				layout.descriptorType = Utils::TypeToVkDescriptorType(resourceDescription.Type);
 				layout.descriptorCount = 1;
 				layout.stageFlags = VK_SHADER_STAGE_ALL;
 				layout.pImmutableSamplers = nullptr;
 
-				ShaderUniformType type = resourceDescription.Type;
-				if (type == ShaderUniformType::STORAGE_IMAGE_2D || type == ShaderUniformType::STORAGE_IMAGE_CUBE)
-					layout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-				else
-					layout.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorSetLayoutBindings[resourceDescription.Set].push_back(layout);
 
-				descriptorSetLayoutBindings[resourceDescription.DescriptorSetID].push_back(layout);
-			}
-		}
+				// Generate write descriptor
+				VkWriteDescriptorSet writeDescriptor = {};
+				writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				writeDescriptor.descriptorType = Utils::TypeToVkDescriptorType(resourceDescription.Type);
+				writeDescriptor.dstBinding = binding;
+				writeDescriptor.descriptorCount = 1;
 
-		// Create acceleration structures layout bindings
-		for (const auto& [set, setAccelerationStructures] : m_AccelerationStructureDescriptions)
-		{
-			for (const auto& [binding, accelerationStructureDescription] : setAccelerationStructures)
-			{
-				VkDescriptorSetLayoutBinding layout{};
+				m_WriteDescriptorSets[resourceDescription.Set][resourceDescription.Binding] = writeDescriptor;
 
-				layout.binding = accelerationStructureDescription.BindingPoint;
-				layout.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-				layout.descriptorCount = 1;
-				layout.stageFlags = VK_SHADER_STAGE_ALL;
-				layout.pImmutableSamplers = nullptr;
+				// Generate descriptor metadata
+				ShaderDescriptorMetadata metadata = {};
+				metadata.Type = resourceDescription.Type;
+				metadata.Set = resourceDescription.Set;
+				metadata.Binding = resourceDescription.Binding;
 
-				descriptorSetLayoutBindings[accelerationStructureDescription.DescriptorSetID].push_back(layout);
+				m_ShaderDescriptorMetadata[resourceDescription.Name] = metadata;
 			}
 		}
 
 		// Use layout bindings to create descriptor set layouts
-		for (const auto& [DescriptorSetID, bindings] : descriptorSetLayoutBindings)
+		for (const auto& [set, bindings] : descriptorSetLayoutBindings)
 		{
 			VkDescriptorSetLayoutCreateInfo layoutInfo{};
 			layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 			layoutInfo.bindingCount = (uint32_t)bindings.size();
 			layoutInfo.pBindings = bindings.data();
 
-			if (DescriptorSetID >= m_DescriptorSetLayouts.size())
-				m_DescriptorSetLayouts.resize(DescriptorSetID + 1);
+			if (set >= m_DescriptorSetLayouts.size())
+				m_DescriptorSetLayouts.resize(set + 1);
 
-			VkDescriptorSetLayout& descriptorSetLayout = m_DescriptorSetLayouts[DescriptorSetID];
+			VkDescriptorSetLayout& descriptorSetLayout = m_DescriptorSetLayouts[set];
 			VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout));
 		}
 
@@ -808,18 +830,18 @@ namespace VkLibrary {
 		return result;
 	}
 
-	uint32_t Shader::GetTypeSize(ShaderUniformType type)
+	uint32_t Shader::GetTypeSize(ShaderDescriptorType type)
 	{
 		switch (type)
 		{
-		case ShaderUniformType::BOOL:   return 4;
-		case ShaderUniformType::INT:    return 4;
-		case ShaderUniformType::UINT:   return 4;
-		case ShaderUniformType::FLOAT:  return 4;
-		case ShaderUniformType::FLOAT2: return 4 * 2;
-		case ShaderUniformType::FLOAT3: return 4 * 3;
-		case ShaderUniformType::FLOAT4: return 4 * 4;
-		case ShaderUniformType::MAT4:   return 64;
+		case ShaderDescriptorType::BOOL:   return 4;
+		case ShaderDescriptorType::INT:    return 4;
+		case ShaderDescriptorType::UINT:   return 4;
+		case ShaderDescriptorType::FLOAT:  return 4;
+		case ShaderDescriptorType::FLOAT2: return 4 * 2;
+		case ShaderDescriptorType::FLOAT3: return 4 * 3;
+		case ShaderDescriptorType::FLOAT4: return 4 * 4;
+		case ShaderDescriptorType::MAT4:   return 64;
 		}
 
 		ASSERT(false, "Unknown Type");

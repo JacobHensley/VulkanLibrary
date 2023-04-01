@@ -1,13 +1,15 @@
 #pragma once
 #include "Shader.h"
 #include "Texture2D.h"
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 
 namespace VkLibrary {
 
-	// TODO: Find a better way to manage descriptor pools
-	// TODO: Add support for a uniform buffer filled with an arbitrary data layout set by the shader
-
+	// TODO: Add support for a push constant filled with an arbitrary data layout set by the shader
+	// TODO: Move write descriptors to constructer
+	// TODO: Add prepare function to update any Descriptors
+	// TODO: Generate pool based on number of uniforms
+	  
 	class Material
 	{
 	public:

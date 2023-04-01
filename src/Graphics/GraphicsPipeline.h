@@ -1,7 +1,7 @@
 #pragma once
-#include <vulkan/vulkan.h>
 #include "Shader.h"
 #include "VertexBufferLayout.h"
+#include <vulkan/vulkan.h>
 
 namespace VkLibrary {
 

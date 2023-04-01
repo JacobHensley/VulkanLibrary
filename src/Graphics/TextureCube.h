@@ -1,5 +1,4 @@
 #pragma once
-
 #include "VulkanBuffers.h"
 #include "VulkanAllocator.h"
 

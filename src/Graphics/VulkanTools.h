@@ -1,7 +1,7 @@
 #pragma once
 #include "Core/Core.h"
+#include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
-#include "glm/glm.hpp"
 
 #define VK_CHECK_RESULT(f)																								\
 {																														\

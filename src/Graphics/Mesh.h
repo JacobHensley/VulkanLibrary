@@ -1,7 +1,7 @@
 #pragma once
-#include "Graphics/VulkanBuffers.h"
-#include "Graphics/Texture2D.h"
-#include "Graphics/Material.h"
+#include "VulkanBuffers.h"
+#include "Texture2D.h"
+#include "Material.h"
 #include <tinygltf/tiny_gltf.h>
 #include <glm/glm.hpp>
 #include <filesystem>

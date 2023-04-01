@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "TextureCube.h"
-
 #include "Core/Application.h"
 #include "VulkanTools.h"
 

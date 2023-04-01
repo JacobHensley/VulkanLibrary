@@ -19,7 +19,7 @@ namespace VkLibrary {
 
 	void Material::SetTexture(const std::string& name, Ref<Texture2D> texture)
 	{
-		VkWriteDescriptorSet& writeDescriptor = m_WriteDescriptors.emplace_back(m_Shader->GenerateWriteDescriptor(name));
+		VkWriteDescriptorSet& writeDescriptor = m_WriteDescriptors.emplace_back(m_Shader->FindWriteDescriptorSet(name));
 		writeDescriptor.dstSet = m_DescriptorSet;
 		writeDescriptor.pImageInfo = &texture->GetDescriptorImageInfo();
 	}

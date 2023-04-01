@@ -5,7 +5,7 @@ namespace VkLibrary {
 
 	struct BufferElement
 	{
-		ShaderUniformType Type;
+		ShaderDescriptorType Type;
 		uint32_t Offset;
 	};
 

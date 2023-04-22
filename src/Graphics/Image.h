@@ -4,6 +4,16 @@
 
 namespace VkLibrary {
 
+	enum class ImageUsage
+	{
+		NONE = -1, FRAMEBUFFER_ATTACHMENT, TEXTURE_2D, TEXTURE_CUBE, STORAGE_IMAGE_2D, STORAGE_IMAGE_CUBE
+	};
+
+	enum class ImageFormat
+	{
+		NONE = -1, RGBA8, RGBA32F, DEPTH24_STENCIL8
+	};
+
 	struct ImageInfo
 	{
 		VkImage Image = VK_NULL_HANDLE;
@@ -15,19 +25,15 @@ namespace VkLibrary {
 	struct ImageSpecification
 	{
 		uint8_t* Data = nullptr;
-		uint32_t Width;
-		uint32_t Height;
-		VkFormat Format;
+		uint32_t Width = 0;
+		uint32_t Height = 0;
 		uint32_t LayerCount = 1;
-		VkImageUsageFlags Usage;
-		VkSampleCountFlagBits SampleCount = VK_SAMPLE_COUNT_1_BIT;
-
+		ImageFormat Format = ImageFormat::NONE;
+		ImageUsage Usage = ImageUsage::NONE;
 		std::string DebugName = "Image";
 	};
 
 	// TODO: Check a resource release queue or intrusive refrence counting system before releasing image
-	// TODO: Change size according to image format
-	// TODO: Create a useage enum that indicates whether the image is going to be used in a framebuffer, storage image, texture, etc.
 
 	class Image
 	{
@@ -39,6 +45,9 @@ namespace VkLibrary {
 		void Release();
 		void Resize(uint32_t width, uint32_t height);
 
+		static uint32_t GetImageFormatSize(ImageFormat format);
+		static VkFormat ImageFormatToVulkan(ImageFormat format);
+		
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_DescriptorImageInfo; }
 		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
 
@@ -46,9 +55,12 @@ namespace VkLibrary {
 		void Init();
 
 	private:
+		uint32_t m_Width = 0;
+		uint32_t m_Height = 0;
+		uint32_t m_Size = 0;
+
 		ImageInfo m_ImageInfo;
 		VkDescriptorImageInfo m_DescriptorImageInfo;
-		uint32_t m_Size = 0;
 
 		ImageSpecification m_Specification;
 	};

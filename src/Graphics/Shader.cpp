@@ -517,6 +517,7 @@ namespace VkLibrary {
 			size_t memberCount = bufferType.member_types.size();
 			uint32_t set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			uint32_t size = compiler.get_declared_struct_size(bufferType);
 
 			if (m_ShaderBufferDescriptions.find(set) != m_ShaderBufferDescriptions.end() && m_ShaderBufferDescriptions.at(set).find(binding) != m_ShaderBufferDescriptions.at(set).end())
 			{
@@ -525,9 +526,9 @@ namespace VkLibrary {
 
 			ShaderBufferDescription& buffer = m_ShaderBufferDescriptions[set][binding];
 			buffer.Name = resource.name;
-			buffer.Size = (uint32_t)compiler.get_declared_struct_size(bufferType);
+			buffer.Size = size;
 			buffer.Binding = binding;
-			buffer.Set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			buffer.Set = set;
 			buffer.Type = ShaderDescriptorType::UNIFORM_BUFFER;
 
 			// Get all members of the uniform buffer
@@ -550,6 +551,7 @@ namespace VkLibrary {
 			size_t memberCount = bufferType.member_types.size();
 			uint32_t set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			uint32_t size = compiler.get_declared_struct_size(bufferType);
 
 			if (m_ShaderBufferDescriptions.find(set) != m_ShaderBufferDescriptions.end() && m_ShaderBufferDescriptions.at(set).find(binding) != m_ShaderBufferDescriptions.at(set).end())
 			{
@@ -558,12 +560,12 @@ namespace VkLibrary {
 
 			ShaderBufferDescription& buffer = m_ShaderBufferDescriptions[set][binding];
 			buffer.Name = resource.name;
-			buffer.Size = (uint32_t)compiler.get_declared_struct_size(bufferType);
+			buffer.Size = size;
 			buffer.Binding = binding;
-			buffer.Set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			buffer.Set = set;
 			buffer.Type = ShaderDescriptorType::STORAGE_BUFFER;
 
-			// Get all members of the uniform buffer
+			// Get all members of the storage buffer
 			for (int i = 0; i < memberCount; i++)
 			{
 				ShaderDescriptor member;
@@ -610,7 +612,7 @@ namespace VkLibrary {
 			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[set][binding];
 			shaderResource.Name = resource.name;
 			shaderResource.Binding = binding;
-			shaderResource.Set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			shaderResource.Set = set;
 			shaderResource.Type = Utils::GetType(type);
 		}
 
@@ -629,7 +631,7 @@ namespace VkLibrary {
 			ShaderResourceDescription& shaderResource = m_ShaderResourceDescriptions[set][binding];
 			shaderResource.Name = resource.name;
 			shaderResource.Binding = binding;
-			shaderResource.Set = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			shaderResource.Set =  set;
 			shaderResource.Type = Utils::GetType(type);
 		}
 
@@ -640,8 +642,8 @@ namespace VkLibrary {
 			for (const spirv_cross::Resource& resource : resources.stage_inputs)
 			{
 				auto& type = compiler.get_type(resource.base_type_id);
-
 				uint32_t location = compiler.get_decoration(resource.id, spv::DecorationLocation);
+
 				ShaderAttributeDescription& attribute = m_ShaderAttributeDescriptions[location];
 				attribute.Name = resource.name;
 				attribute.Location = location;
@@ -658,20 +660,34 @@ namespace VkLibrary {
 		// Get all push constant ranges
 		for (const spirv_cross::Resource& resource : resources.push_constant_buffers)
 		{
-			uint32_t bufferOffset = 0;
-
-			const auto& bufferType = compiler.get_type(resource.base_type_id);
-			size_t bufferSize = compiler.get_declared_struct_size(bufferType);
+			auto& bufferType = compiler.get_type(resource.base_type_id);
+			size_t memberCount = bufferType.member_types.size();
+			uint32_t size = compiler.get_declared_struct_size(bufferType);
+			uint32_t offset = 0;
 
 			// Calculate range offest based on last buffers offset and size
 			if (m_PushConstantBufferRanges.size())
-				bufferOffset = m_PushConstantBufferRanges.back().Offset + m_PushConstantBufferRanges.back().Size;
+				offset = m_PushConstantBufferRanges.back().Offset + m_PushConstantBufferRanges.back().Size;
 
-			auto& pushConstantRange = m_PushConstantBufferRanges.emplace_back();
+			PushConstantRangeDescription& pushConstantRange = m_PushConstantBufferRanges.emplace_back();
+			pushConstantRange.Name = resource.name;
 			pushConstantRange.ShaderStage = Utils::ShaderStageToVulkan(stage);
-			pushConstantRange.Size = (uint32_t)(bufferSize - bufferOffset);
-			pushConstantRange.Offset = bufferOffset;
+			pushConstantRange.Size = size;
+			pushConstantRange.Offset = offset;
+
+			// Get all members of the push constant range
+			for (int i = 0; i < memberCount; i++)
+			{
+				ShaderDescriptor member;
+				member.Name = compiler.get_member_name(bufferType.self, i);
+				member.Size = (uint32_t)compiler.get_declared_struct_member_size(bufferType, i);
+				member.Type = Utils::GetType(compiler.get_type(bufferType.member_types[i]));
+				member.Offset = compiler.type_struct_member_offset(bufferType, i);
+
+				pushConstantRange.Members.push_back(member);
+			}
 		}
+
 	}
 
 	void Shader::GenerateDescriptorData()

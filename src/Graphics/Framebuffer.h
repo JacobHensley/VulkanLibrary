@@ -10,7 +10,7 @@ namespace VkLibrary {
 		float Scale = 1.0f;
 		bool ClearOnLoad = true;
 		glm::vec4 ClearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-		std::vector<VkFormat> AttachmentFormats;
+		std::vector<ImageFormat> AttachmentFormats;
 		
 		std::string DebugName = "Framebuffer";
 	};
@@ -24,8 +24,7 @@ namespace VkLibrary {
 	};
 
 	// TODO: Check a resource release queue or intrusive refrence counting system before releasing framebuffer
-	// TODO: Don't use a staging buffer for attachment images
-	
+
 	class Framebuffer
 	{
 	public:

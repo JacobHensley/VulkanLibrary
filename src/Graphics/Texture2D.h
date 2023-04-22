@@ -12,7 +12,6 @@ namespace VkLibrary {
 	};
 
 	// TODO: Add support for multiple texture formats
-	// TODO: Remove data, width and height as it is already in Image
 
 	class Texture2D
 	{
@@ -20,15 +19,14 @@ namespace VkLibrary {
 		Texture2D(Texture2DSpecification specification);
 		~Texture2D();
 
+		inline Ref<Image> GetImage() { return m_Image; }
+
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorImageInfo(); }
 		inline const Texture2DSpecification& GetSpecification() const { return m_Specification; }
 
 	private:
 		std::filesystem::path m_Path;
 		Ref<Image> m_Image;
-
-		uint8_t* m_Data = nullptr;
-		uint32_t m_Width = 0, m_Height = 0;
 
 		Texture2DSpecification m_Specification;
 	};

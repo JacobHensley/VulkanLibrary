@@ -27,7 +27,8 @@ namespace VkLibrary {
 		for (int i = 0; i < m_Specification.AttachmentFormats.size(); i++)
 		{
 			// If attachment is a depth format use specfic attachment otherwise create a new one in the list
-			bool isDepth = VkTools::IsDepthFormat(m_Specification.AttachmentFormats[i]);
+			VkFormat format = Image::ImageFormatToVulkan(m_Specification.AttachmentFormats[i]);
+			bool isDepth = VkTools::IsDepthFormat(format);
 			FramebufferAttachment& attachment = isDepth ? m_DepthAttachment : m_ColorAttachments.emplace_back();
 
 			// Create image to fit attachment
@@ -36,8 +37,7 @@ namespace VkLibrary {
 			imageSpecification.Width = m_Width;
 			imageSpecification.Height = m_Height;
 			imageSpecification.Format = m_Specification.AttachmentFormats[i];
-			imageSpecification.Usage = isDepth ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-			imageSpecification.SampleCount = VK_SAMPLE_COUNT_1_BIT;
+			imageSpecification.Usage = ImageUsage::FRAMEBUFFER_ATTACHMENT;
 			imageSpecification.DebugName = fmt::format("{}, {} Attachment {}", m_Specification.DebugName, isDepth ? "Depth" : "Color", i);
 			attachment.Image = CreateRef<Image>(imageSpecification);
 
@@ -48,13 +48,13 @@ namespace VkLibrary {
 			attachment.Description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 			attachment.Description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			attachment.Description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachment.Description.format = m_Specification.AttachmentFormats[i];
+			attachment.Description.format = format;
 			attachment.Description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			if (!m_Specification.ClearOnLoad)
 				attachment.Description.initialLayout = isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			// Final layout
-			if (isDepth || VkTools::IsStencilFormat(m_Specification.AttachmentFormats[i]))
+			if (isDepth || VkTools::IsStencilFormat(format))
 			{
 				attachment.Description.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 			}

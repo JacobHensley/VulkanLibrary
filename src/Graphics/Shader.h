@@ -18,22 +18,6 @@ namespace VkLibrary {
 		UNIFORM_BUFFER, STORAGE_BUFFER
 	};
 
-	struct ShaderAttributeDescription
-	{
-		std::string Name;
-		ShaderDescriptorType Type;
-		uint32_t Size;
-		uint32_t Offset;
-		uint32_t Location;
-	};
-
-	struct PushConstantRangeDescription
-	{
-		VkShaderStageFlagBits ShaderStage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
-		uint32_t Size = 0;
-		uint32_t Offset = 0;
-	};
-
 	struct ShaderDescriptor
 	{
 		std::string Name;
@@ -42,20 +26,39 @@ namespace VkLibrary {
 		uint32_t Offset = -1;
 	};
 
+	struct ShaderAttributeDescription
+	{
+		std::string Name;
+		ShaderDescriptorType Type = ShaderDescriptorType::NONE;
+		uint32_t Size = -1;
+		uint32_t Offset = -1;
+		uint32_t Location = -1;
+	};
+
+	struct PushConstantRangeDescription
+	{
+		VkShaderStageFlagBits ShaderStage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+		std::string Name;
+		uint32_t Size = -1;
+		uint32_t Offset = -1;
+
+		std::vector<ShaderDescriptor> Members;
+	};
+
 	struct ShaderResourceDescription
 	{
 		std::string Name;
 		ShaderDescriptorType Type = ShaderDescriptorType::NONE;
-		uint32_t Binding = -1;
 		uint32_t Set = -1;
+		uint32_t Binding = -1;
 	};
 
 	struct ShaderBufferDescription
 	{
 		std::string Name;
 		ShaderDescriptorType Type = ShaderDescriptorType::NONE;
-		uint32_t Binding = -1;
 		uint32_t Set = -1;
+		uint32_t Binding = -1;
 		uint32_t Size = -1;
 
 		std::vector<ShaderDescriptor> Members;

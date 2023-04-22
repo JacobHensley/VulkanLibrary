@@ -193,12 +193,12 @@ namespace VkLibrary {
 		for (tinygltf::Material& gltfMaterial : m_Model.materials)
 		{
 			Material& material = m_Materials.emplace_back(m_DefaultShader);
-			MaterialBuffer& materialBuffer = m_MaterialBuffers.emplace_back();
 
 			// PBR values
-			materialBuffer.AlbedoValue = glm::make_vec3(&gltfMaterial.pbrMetallicRoughness.baseColorFactor[0]);
-			materialBuffer.MetallicValue = gltfMaterial.pbrMetallicRoughness.metallicFactor;
-			materialBuffer.RoughnessValue = gltfMaterial.pbrMetallicRoughness.roughnessFactor;
+			glm::vec3 albedoValue = glm::make_vec3(&gltfMaterial.pbrMetallicRoughness.baseColorFactor[0]);
+			float metallicValue = gltfMaterial.pbrMetallicRoughness.metallicFactor;
+			float roughnessValue = gltfMaterial.pbrMetallicRoughness.roughnessFactor;
+			float useNormalMap = 0.0f;
 
 			// Albedo texture
 			uint32_t albedoTextureIndex = gltfMaterial.pbrMetallicRoughness.baseColorTexture.index;
@@ -213,9 +213,8 @@ namespace VkLibrary {
 
 				Ref<Texture2D>& texture = m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
-				material.SetTexture("u_AlbedoTexture", texture);
-				materialBuffer.AlbedoMapIndex = (uint32_t)m_Textures.size() - 1;
-				materialBuffer.AlbedoValue = glm::vec3(1.0f);
+				material.SetTexture("u_AlbedoTexture", texture->GetImage());
+				albedoValue = glm::vec3(1.0f);
 			}
 
 			// MetallicRoughness texture
@@ -231,10 +230,9 @@ namespace VkLibrary {
 
 				Ref<Texture2D>& texture = m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
-				material.SetTexture("u_MetallicRoughnessTexture", texture);
-				materialBuffer.MetallicRoughnessMapIndex = (uint32_t)m_Textures.size() - 1;
-				materialBuffer.MetallicValue = 1.0f;
-				materialBuffer.RoughnessValue = 1.0f;
+				material.SetTexture("u_MetallicRoughnessTexture", texture->GetImage());
+				metallicValue = 1.0f;
+				roughnessValue = 1.0f;
 			}
 
 			// Normal texture
@@ -250,10 +248,14 @@ namespace VkLibrary {
 
 				Ref<Texture2D>& texture = m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
-				material.SetTexture("u_NormalTexture", texture);
-				materialBuffer.NormalMapIndex = (uint32_t)m_Textures.size() - 1;
-				materialBuffer.UseNormalMap = 1;
+				material.SetTexture("u_NormalTexture", texture->GetImage());
+				useNormalMap = 1.0f;
 			}
+
+			material.Set<glm::vec3>("AlbedoValue", albedoValue);
+			material.Set<float>("MetallicValue", metallicValue);
+			material.Set<float>("RoughnessValue", roughnessValue);
+			material.Set<float>("UseNormalMap", useNormalMap);
 
 			material.UpdateDescriptorSet();
 		}

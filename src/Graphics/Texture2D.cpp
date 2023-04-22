@@ -16,16 +16,13 @@ namespace VkLibrary {
 		uint8_t* data = stbi_load(m_Specification.path.string().c_str(), &width, &height, &bpp, 4);
 		ASSERT(data, "Failed to load image");
 
-		// Set width and height
-		m_Width = width;
-		m_Height = height;
-
 		// Create image
 		ImageSpecification imageSpecification = {};
 		imageSpecification.Data = data;
-		imageSpecification.Width = m_Width;
-		imageSpecification.Height = m_Width;
-		imageSpecification.Format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageSpecification.Width = width;
+		imageSpecification.Height = height;
+		imageSpecification.Format = ImageFormat::RGBA8;
+		imageSpecification.Usage = ImageUsage::TEXTURE_2D;
 		imageSpecification.DebugName = (m_Specification.DebugName + ", Image").c_str();
 
 		m_Image = CreateRef<Image>(imageSpecification);

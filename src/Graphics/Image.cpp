@@ -8,7 +8,7 @@ namespace VkLibrary {
 	Image::Image(ImageSpecification specification)
 		:	m_Specification(specification)
 	{
-		Init();
+		Resize(m_Specification.Width, m_Specification.Height);
 	}
 
 	Image::~Image()
@@ -18,51 +18,66 @@ namespace VkLibrary {
 
 	void Image::Init()
 	{
-		uint32_t size = m_Specification.Width * m_Specification.Height * 4;
+		Ref<VulkanDevice> device = Application::GetVulkanDevice();
+
+		m_Size = m_Specification.Width * m_Specification.Height * GetImageFormatSize(m_Specification.Format);
+		VkFormat format = ImageFormatToVulkan(m_Specification.Format);
+		bool isDepthFormat = VkTools::IsDepthFormat(format);
+		bool isCube = m_Specification.Usage == ImageUsage::TEXTURE_CUBE || m_Specification.Usage == ImageUsage::STORAGE_IMAGE_CUBE;
+		uint32_t layerCount = isCube ? 6 : m_Specification.LayerCount;
+		VkImageAspectFlags aspectFlag = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
 		VkImageCreateInfo imageCreateInfo = {};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = m_Specification.Format;
+		imageCreateInfo.format = format;
 		imageCreateInfo.mipLevels = 1;
-		imageCreateInfo.arrayLayers = m_Specification.LayerCount;
-		imageCreateInfo.samples = m_Specification.SampleCount;
+		imageCreateInfo.arrayLayers = layerCount;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageCreateInfo.extent = { m_Specification.Width, m_Specification.Height, 1 };
-		imageCreateInfo.usage = m_Specification.Usage | VK_IMAGE_USAGE_SAMPLED_BIT;
-		if (!(imageCreateInfo.usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT))
+		imageCreateInfo.extent = { m_Width, m_Height, 1 };
+		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+
+		if (m_Specification.Usage == ImageUsage::FRAMEBUFFER_ATTACHMENT)
+		{
+			imageCreateInfo.usage |= isDepthFormat ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		}
+		else if (m_Specification.Usage == ImageUsage::STORAGE_IMAGE_2D || m_Specification.Usage == ImageUsage::STORAGE_IMAGE_CUBE)
+		{
+			imageCreateInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+		}
+		else if (m_Specification.Usage == ImageUsage::TEXTURE_2D || m_Specification.Usage == ImageUsage::TEXTURE_CUBE)
 		{
 			imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		}
 
-		// Allocate and create image object
+		if (isCube)
+		{
+			imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		}
+
+		// Allcate memory on the GPU
 		VulkanAllocator allocator(m_Specification.DebugName);
 		m_ImageInfo.MemoryAllocation = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY, m_ImageInfo.Image);
 		VkTools::SetImageName(m_ImageInfo.Image, m_Specification.DebugName.c_str());
 
-		bool isDepth = VkTools::IsDepthFormat(m_Specification.Format);
-		VkImageAspectFlags aspectFlag = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
+		m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		Ref<VulkanDevice> device = Application::GetVulkanDevice();
-
-		if (m_Specification.Data)
+		if ((m_Specification.Usage == ImageUsage::TEXTURE_2D || m_Specification.Usage == ImageUsage::TEXTURE_CUBE) && m_Specification.Data)
 		{
-			// Create staging buffer with image data	
-			StagingBuffer stagingBuffer(m_Specification.Data, size, m_Specification.DebugName + ", Staging Buffer");
-
+			StagingBuffer stagingBuffer(m_Specification.Data, m_Size, m_Specification.DebugName + ", Staging Buffer");
 			VkCommandBuffer commandBuffer = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
-			// Range of image to copy (only the first mip)
 			VkImageSubresourceRange range;
 			range.aspectMask = aspectFlag;
 			range.baseMipLevel = 0;
 			range.levelCount = 1;
 			range.baseArrayLayer = 0;
-			range.layerCount = m_Specification.LayerCount;
+			range.layerCount = layerCount;
 
-			// Transfer image from undefined layout to destination optimal for copying into
+			// Transfer image from undefined layout to transfer destination optimal layout
 			VkTools::InsertImageMemoryBarrier(
 				commandBuffer,
 				m_ImageInfo.Image,
@@ -74,7 +89,6 @@ namespace VkLibrary {
 				VK_PIPELINE_STAGE_TRANSFER_BIT,
 				range);
 
-			// Define what part of the image to copy
 			VkBufferImageCopy copyRegion = {};
 			copyRegion.bufferOffset = 0;
 			copyRegion.bufferRowLength = 0;
@@ -82,15 +96,13 @@ namespace VkLibrary {
 			copyRegion.imageSubresource.aspectMask = aspectFlag;
 			copyRegion.imageSubresource.mipLevel = 0;
 			copyRegion.imageSubresource.baseArrayLayer = 0;
-			copyRegion.imageSubresource.layerCount = m_Specification.LayerCount;
-			copyRegion.imageExtent.width = m_Specification.Width;
-			copyRegion.imageExtent.height = m_Specification.Height;
-			copyRegion.imageExtent.depth = 1;
+			copyRegion.imageSubresource.layerCount = layerCount;
+			copyRegion.imageExtent = { m_Width, m_Height, 1 };
 
-			// Copy CPU-GPU buffer into GPU-ONLY texture
+			// Copy staging buffer to image on the GPU
 			vkCmdCopyBufferToImage(commandBuffer, stagingBuffer.GetBuffer(), m_ImageInfo.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-			// Transfer image from destination optimal layout to shader read optimal
+			// Transfer image from transfer destination optimal layout to shader read optimal layout
 			VkTools::InsertImageMemoryBarrier(
 				commandBuffer,
 				m_ImageInfo.Image,
@@ -102,30 +114,59 @@ namespace VkLibrary {
 				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 				range);
 
+			device->FlushCommandBuffer(commandBuffer, true);
+		}
+		else if (m_Specification.Usage == ImageUsage::STORAGE_IMAGE_2D || m_Specification.Usage == ImageUsage::STORAGE_IMAGE_CUBE)
+		{
+			VkCommandBuffer commandBuffer = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+
+			VkImageSubresourceRange range;
+			range.aspectMask = aspectFlag;
+			range.baseMipLevel = 0;
+			range.levelCount = 1;
+			range.baseArrayLayer = 0;
+			range.layerCount = layerCount;
+
+			// Transfer image from undefined layout to general layout
+			VkTools::InsertImageMemoryBarrier(
+				commandBuffer,
+				m_ImageInfo.Image,
+				0,
+				VK_ACCESS_SHADER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_GENERAL,
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+				VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+				range);
+
 			// Submit and free command buffer
 			device->FlushCommandBuffer(commandBuffer, true);
 
-			m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		}
+		else if (m_Specification.Usage == ImageUsage::FRAMEBUFFER_ATTACHMENT)
+		{
+			m_DescriptorImageInfo.imageLayout = isDepthFormat ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		}
 
 		// Create image view
 		VkImageViewCreateInfo imageViewCreateInfo = {};
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCreateInfo.format = m_Specification.Format;
+		imageViewCreateInfo.viewType = isCube ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCreateInfo.format = format;
 		imageViewCreateInfo.flags = 0;
 		imageViewCreateInfo.subresourceRange = {};
 		imageViewCreateInfo.subresourceRange.aspectMask = aspectFlag;
 		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
 		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		imageViewCreateInfo.subresourceRange.layerCount = m_Specification.LayerCount;
+		imageViewCreateInfo.subresourceRange.layerCount = layerCount;
 		imageViewCreateInfo.image = m_ImageInfo.Image;
 
 		VK_CHECK_RESULT(vkCreateImageView(device->GetLogicalDevice(), &imageViewCreateInfo, nullptr, &m_ImageInfo.ImageView));
 		VkTools::SetImageViewName(m_ImageInfo.ImageView, (m_Specification.DebugName + ", Image View").c_str());
 
-		// Create sampler
+		// Create image sampler
 		VkSamplerCreateInfo samplerCreateInfo = {};
 		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		samplerCreateInfo.anisotropyEnable = VK_FALSE;
@@ -141,55 +182,19 @@ namespace VkLibrary {
 		VK_CHECK_RESULT(vkCreateSampler(device->GetLogicalDevice(), &samplerCreateInfo, nullptr, &m_ImageInfo.Sampler));
 		VkTools::SetSamplerName(m_ImageInfo.Sampler, (m_Specification.DebugName + ", Sampler").c_str());
 
-		// Create descriptor image info
-		if (imageCreateInfo.usage & VK_IMAGE_USAGE_STORAGE_BIT)
-		{
-			VkCommandBuffer commandBuffer = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-
-			m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-			// Range of image to copy (only the first mip)
-			VkImageSubresourceRange range;
-			range.aspectMask = aspectFlag;
-			range.baseMipLevel = 0;
-			range.levelCount = 1;
-			range.baseArrayLayer = 0;
-			range.layerCount = m_Specification.LayerCount;
-
-			// Transfer image from destination optimal layout to shader read optimal
-			VkTools::InsertImageMemoryBarrier(
-				commandBuffer,
-				m_ImageInfo.Image,
-				0,
-				VK_ACCESS_SHADER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				m_DescriptorImageInfo.imageLayout,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
-				range);
-
-			// Submit and free command buffer
-			device->FlushCommandBuffer(commandBuffer, true);
-		}
-		else if ((m_Specification.Usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) || (m_Specification.Usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT))
-		{
-			// If the image is made for a framebuffer then set its layout
-			m_DescriptorImageInfo.imageLayout = isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		}
-
 		m_DescriptorImageInfo.imageView = m_ImageInfo.ImageView;
 		m_DescriptorImageInfo.sampler = m_ImageInfo.Sampler;
 	}
 
 	void Image::Release()
 	{
+		VkDevice device = Application::GetVulkanDevice()->GetLogicalDevice();
+
 		if (!m_ImageInfo.Image)
 			return;
 
 		VulkanAllocator allocator(m_Specification.DebugName);
 		allocator.DestroyImage(m_ImageInfo.Image, m_ImageInfo.MemoryAllocation);
-
-		VkDevice device = Application::GetVulkanDevice()->GetLogicalDevice();
 
 		vkDestroyImageView(device, m_ImageInfo.ImageView, nullptr);
 		vkDestroySampler(device, m_ImageInfo.Sampler, nullptr);
@@ -204,10 +209,36 @@ namespace VkLibrary {
 	{
 		Release();
 
-		m_Specification.Width = width;
-		m_Specification.Height = height;
+		m_Width = width;
+		m_Height = height;
 
 		Init();
 	}
+
+	uint32_t Image::GetImageFormatSize(ImageFormat format)
+	{
+		switch (format)
+		{
+		case ImageFormat::RGBA8:		    return 4;
+		case ImageFormat::RGBA32F:			return 16;
+		case ImageFormat::DEPTH24_STENCIL8: return 4;
+		}
+
+		ASSERT(false, "Unknown Type");
+		return 0;
+	};
+
+	VkFormat Image::ImageFormatToVulkan(ImageFormat format)
+	{
+		switch (format)
+		{
+		case ImageFormat::RGBA8:		    return VK_FORMAT_R8G8B8A8_UNORM;
+		case ImageFormat::RGBA32F:			return VK_FORMAT_R32G32B32A32_SFLOAT;
+		case ImageFormat::DEPTH24_STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
+		}
+
+		ASSERT(false, "Unknown Type");
+		return (VkFormat)0;
+	};
 
 }

@@ -10,9 +10,6 @@ namespace VkLibrary {
 		VmaAllocation Allocation = nullptr;
 	};
 
-	// TODO: Add flags to augment buffer usage and memory usage
-	// NOTE: All buffers are set to VK_SHARING_MODE_EXCLUSIVE except StorageBuffer as it is needed on both the graphics and compute queue
-
 	class VertexBuffer
 	{
 	public:
@@ -133,7 +130,8 @@ namespace VkLibrary {
 
 	public:
 		VkBuffer GetBuffer() { return m_BufferInfo.Buffer; }
-	
+		uint32_t GetSize() { return m_Size; }
+
 		template<typename T>
 		T* Map()
 		{
@@ -150,6 +148,7 @@ namespace VkLibrary {
 	private:
 		BufferInfo m_BufferInfo;
 		VkDescriptorBufferInfo m_DescriptorBufferInfo;
+		uint32_t m_Size;
 		const std::string m_DebugName;
 	};
 

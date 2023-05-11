@@ -10,7 +10,7 @@ namespace VkLibrary {
         VkBufferCreateInfo bufferCreateInfo = {};
         bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferCreateInfo.size = size;
-        bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         VulkanAllocator allocator(m_DebugName);
@@ -38,7 +38,7 @@ namespace VkLibrary {
         VkBufferCreateInfo bufferCreateInfo = {};
         bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferCreateInfo.size = size;
-        bufferCreateInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        bufferCreateInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         VulkanAllocator allocator(m_DebugName);
@@ -121,13 +121,13 @@ namespace VkLibrary {
     }
 
     StorageBuffer::StorageBuffer(void* data, uint32_t size, const std::string& debugName)
-        : m_DebugName(debugName)
+        : m_DebugName(debugName), m_Size(size)
     {
         VkBufferCreateInfo bufferCreateInfo = {};
         bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferCreateInfo.size = size;
+        bufferCreateInfo.size = m_Size;
         bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-        bufferCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+        bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         VulkanAllocator allocator(m_DebugName);
         m_BufferInfo.Allocation = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_CPU_TO_GPU, m_BufferInfo.Buffer);
@@ -136,12 +136,12 @@ namespace VkLibrary {
 
         m_DescriptorBufferInfo.buffer = m_BufferInfo.Buffer;
         m_DescriptorBufferInfo.offset = 0;
-        m_DescriptorBufferInfo.range = size;
+        m_DescriptorBufferInfo.range = m_Size;
 
         if (data)
         {
             void* dstBuffer = allocator.MapMemory<void>(m_BufferInfo.Allocation);
-            memcpy(dstBuffer, data, size);
+            memcpy(dstBuffer, data, m_Size);
             allocator.UnmapMemory(m_BufferInfo.Allocation);
         }
     }

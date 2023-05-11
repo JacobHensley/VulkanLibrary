@@ -24,7 +24,7 @@ namespace VkLibrary {
 		if (s_DefaultCubeMap == nullptr)
 		{
 			ImageSpecification spec = {};
-			spec.Data = new unsigned char[1];
+			spec.Data = new uint8_t[sizeof(uint32_t)];
 			spec.Width = 1;
 			spec.Height = 1;
 			spec.Format = ImageFormat::RGBA8;
@@ -36,7 +36,7 @@ namespace VkLibrary {
 		if (s_DefaultTexture == nullptr)
 		{
 			ImageSpecification spec = {};
-			spec.Data = new unsigned char[1];
+			spec.Data = new uint8_t[sizeof(uint32_t)];
 			spec.Width = 1;
 			spec.Height = 1;
 			spec.Format = ImageFormat::RGBA8;
@@ -129,12 +129,13 @@ namespace VkLibrary {
 			if (pushConstant.Name == "u_MaterialData")
 			{
 				m_PushConstantRangeDescription = pushConstant;
+				break;
 			}
 		}
 
 		if (m_PushConstantRangeDescription.Size != -1)
 		{
-			m_Buffer = (unsigned char*)malloc(m_PushConstantRangeDescription.Size);
+			m_Buffer = (uint8_t*)malloc(m_PushConstantRangeDescription.Size);
 			memset(m_Buffer, 0.0f, m_PushConstantRangeDescription.Size);
 		}
 	}

@@ -70,7 +70,7 @@ namespace VkLibrary {
 
 		// Required extensions
 		deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	//	deviceExtensions.push_back(VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME);
+		deviceExtensions.push_back(VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME);
 
 		VkPhysicalDeviceVulkan12Features v12Features{};
 		v12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
@@ -80,9 +80,6 @@ namespace VkLibrary {
 		v12Features.descriptorIndexing = true;
 		v12Features.runtimeDescriptorArray = true;
 		v12Features.bufferDeviceAddress = true;
-
-#define RTX 0
-#if RTX
 
 		// Ray tracing features
 		VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features{};
@@ -118,8 +115,6 @@ namespace VkLibrary {
 		deviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 		deviceExtensions.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
 		deviceExtensions.push_back(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
-
-#endif
 
 		VkDeviceCreateInfo deviceCreateInfo{};
 		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

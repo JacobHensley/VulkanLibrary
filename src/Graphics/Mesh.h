@@ -27,20 +27,9 @@ namespace VkLibrary {
 		glm::mat4 WorldTransform = glm::mat4(1.0f);
 	};
 
-	struct MaterialBuffer
-	{
-		glm::vec3 AlbedoValue{ 0.8f };
-		float MetallicValue = 0.0f;
-		float RoughnessValue = 1.0f;
-		uint32_t UseNormalMap = 0;
-
-		uint32_t AlbedoMapIndex = 0;
-		uint32_t NormalMapIndex = 0;
-		uint32_t MetallicRoughnessMapIndex = 0;
-	};
-
 	// TODO: Pull m_DefaultShader from some shader libary instead of creating one for every mesh
-	
+	// TODO: Rename WorldTransform
+
 	class Mesh
 	{
 	public:
@@ -51,7 +40,6 @@ namespace VkLibrary {
 		inline const std::vector<SubMesh>& GetSubMeshes() const { return m_SubMeshes; }
 		
 		inline const std::vector<Material>& GetMaterials() const { return m_Materials; };
-		inline const std::vector<MaterialBuffer>& GetMaterialBuffers() const { return m_MaterialBuffers; };
 		inline const std::vector<Ref<Texture2D>>& GetTextures() const { return m_Textures; }
 
 		inline Ref<VertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
@@ -75,7 +63,6 @@ namespace VkLibrary {
 		Ref<IndexBuffer> m_IndexBuffer;
 
 		std::vector<Material> m_Materials;
-		std::vector<MaterialBuffer> m_MaterialBuffers;
 		std::vector<Ref<Texture2D>> m_Textures;
 
 		Ref<Shader> m_DefaultShader;

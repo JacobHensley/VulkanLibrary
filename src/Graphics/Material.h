@@ -5,7 +5,6 @@
 
 namespace VkLibrary {
 
-	// TODO: Go though all write descriptor sets and set it to some default value instead of skipping
 	// TODO: Add prepare function to update descriptors
 	
 	class Material
@@ -36,11 +35,11 @@ namespace VkLibrary {
 
 		inline const VkDescriptorSet& GetDescriptorSet() const { return m_DescriptorSet; }
 		inline const PushConstantRangeDescription& GetPushConstantRangeDescription() const { return m_PushConstantRangeDescription; }
-		inline const unsigned char* GetBuffer() const { return m_Buffer; }
+		inline const uint8_t* GetBuffer() const { return m_Buffer; }
 
 	private:
 		Ref<Shader> m_Shader;
-		unsigned char* m_Buffer;
+		uint8_t* m_Buffer;
 
 		VkDescriptorPool m_Pool = VK_NULL_HANDLE;
 		VkDescriptorSet m_DescriptorSet = VK_NULL_HANDLE;

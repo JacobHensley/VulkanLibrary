@@ -12,6 +12,22 @@
 namespace VkLibrary {
 
 	namespace VkTools {
+
+		// Default validation layers
+		extern int validationLayerCount;
+		extern const char* validationLayerNames[];
+
+		// Default debug callback
+		VKAPI_ATTR VkBool32 VKAPI_CALL MessageCallback(
+			VkDebugReportFlagsEXT flags,
+			VkDebugReportObjectTypeEXT objType,
+			uint64_t srcObject,
+			size_t location,
+			int32_t msgCode,
+			const char* pLayerPrefix,
+			const char* pMsg,
+			void* pUserData);
+
 		// Returns an error code as a string
 		std::string ErrorString(VkResult errorCode);
 
@@ -47,20 +63,11 @@ namespace VkLibrary {
 			VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 			VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
-		// Default validation layers
-		extern int validationLayerCount;
-		extern const char* validationLayerNames[];
-
-		// Default debug callback
-		VKAPI_ATTR VkBool32 VKAPI_CALL MessageCallback(
-			VkDebugReportFlagsEXT flags,
-			VkDebugReportObjectTypeEXT objType,
-			uint64_t srcObject,
-			size_t location,
-			int32_t msgCode,
-			const char* pLayerPrefix,
-			const char* pMsg,
-			void* pUserData);
+		VkDescriptorSetLayoutBinding CreateDescriptorSetLayoutBinding(
+			VkDescriptorType type, 
+			VkShaderStageFlags stageFlags, 
+			uint32_t binding, 
+			uint32_t descriptorCount = 1);
 
 		// Load debug function pointers and set debug callback
 		// if callBack is NULL, default message callback will be used

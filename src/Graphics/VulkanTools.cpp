@@ -6,6 +6,20 @@ namespace VkLibrary {
 
 	namespace VkTools {
 
+		static VkDebugUtilsMessengerEXT s_DebugUtilsMessenger;
+
+		VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsMessengerCallback(
+			VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+			VkDebugUtilsMessageTypeFlagsEXT messageType,
+			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+			void* pUserData)
+		{
+			if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+				LOG_ERROR("Validation layer: {0}", pCallbackData->pMessage);
+
+			return VK_FALSE;
+		}
+
 		std::string ErrorString(VkResult errorCode)
 		{
 			switch (errorCode)
@@ -235,18 +249,15 @@ namespace VkLibrary {
 			SetImageLayout(cmdbuffer, image, oldImageLayout, newImageLayout, subresourceRange, srcStageMask, dstStageMask);
 		}
 
-		static VkDebugUtilsMessengerEXT s_DebugUtilsMessenger;
-
-		VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsMessengerCallback(
-			VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-			VkDebugUtilsMessageTypeFlagsEXT messageType,
-			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-			void* pUserData)
+		VkDescriptorSetLayoutBinding CreateDescriptorSetLayoutBinding(VkDescriptorType type, VkShaderStageFlags stageFlags, uint32_t binding, uint32_t descriptorCount)
 		{
-			if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-				LOG_ERROR("Validation layer: {0}", pCallbackData->pMessage);
-			
-			return VK_FALSE;
+			VkDescriptorSetLayoutBinding setLayoutBinding = {};
+			setLayoutBinding.descriptorType = type;
+			setLayoutBinding.stageFlags = stageFlags;
+			setLayoutBinding.binding = binding;
+			setLayoutBinding.descriptorCount = descriptorCount;
+
+			return setLayoutBinding;
 		}
 
 		void SetupDebugging(VkInstance instance)

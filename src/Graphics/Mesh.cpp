@@ -192,7 +192,7 @@ namespace VkLibrary {
 	{
 		for (tinygltf::Material& gltfMaterial : m_Model.materials)
 		{
-			Material& material = m_Materials.emplace_back(m_DefaultShader);
+			MaterialBuffer& material = m_MaterialBuffers.emplace_back();
 
 			// PBR values
 			glm::vec3 albedoValue = glm::make_vec3(&gltfMaterial.pbrMetallicRoughness.baseColorFactor[0]);
@@ -211,9 +211,9 @@ namespace VkLibrary {
 				textureSpec.path = m_Path.parent_path() / image.uri;
 				textureSpec.DebugName = (m_Path.filename().string()  + ", Albedo Texture");
 
-				Ref<Texture2D>& texture = m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
+				m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
-				material.SetTexture("u_AlbedoTexture", texture->GetImage());
+				material.AlbedoMapIndex = albedoTextureIndex;
 				albedoValue = glm::vec3(1.0f);
 			}
 
@@ -228,9 +228,9 @@ namespace VkLibrary {
 				textureSpec.path = m_Path.parent_path() / image.uri;
 				textureSpec.DebugName = (m_Path.filename().string() + ", MetallicRoughness Texture");
 
-				Ref<Texture2D>& texture = m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
+				m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
-				material.SetTexture("u_MetallicRoughnessTexture", texture->GetImage());
+				material.MetallicRoughnessMapIndex = metallicRoughnessTextureIndex;
 				metallicValue = 1.0f;
 				roughnessValue = 1.0f;
 			}
@@ -246,18 +246,16 @@ namespace VkLibrary {
 				textureSpec.path = m_Path.parent_path() / image.uri;
 				textureSpec.DebugName = (m_Path.filename().string() + ", Normal Texture");
 
-				Ref<Texture2D>& texture = m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
+				m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
-				material.SetTexture("u_NormalTexture", texture->GetImage());
+				material.NormalMapIndex = normalTextureIndex;
 				useNormalMap = 1.0f;
 			}
 
-			material.Set<glm::vec3>("AlbedoValue", albedoValue);
-			material.Set<float>("MetallicValue", metallicValue);
-			material.Set<float>("RoughnessValue", roughnessValue);
-			material.Set<float>("UseNormalMap", useNormalMap);
-
-			material.UpdateDescriptorSet();
+			material.AlbedoValue = albedoValue;
+			material.MetallicValue = metallicValue;
+			material.RoughnessValue = roughnessValue;
+			material.UseNormalMap =  useNormalMap;
 		}
 	}
 

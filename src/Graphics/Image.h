@@ -33,7 +33,7 @@ namespace VkLibrary {
 		std::string DebugName = "Image";
 	};
 
-	// TODO: Check a resource release queue or intrusive refrence counting system before releasing image
+	// TODO: Add support for resource deletion queue in Release()
 
 	class Image
 	{

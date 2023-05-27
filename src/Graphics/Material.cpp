@@ -11,7 +11,7 @@ namespace VkLibrary {
 	Material::Material(Ref<Shader> shader)
 		:	m_Shader(shader)
 	{
-		Ref<VulkanDevice> device = Application::GetApp().GetVulkanDevice();
+		Ref<VulkanDevice> device = Application::GetVulkanDevice();
 
 		const auto& bufferDescriptions = m_Shader->GetShaderBufferDescriptions();
 		const auto& resourceDescriptions = m_Shader->GetShaderResourceDescriptions();
@@ -154,7 +154,7 @@ namespace VkLibrary {
 			writeDescriptors.push_back(writeDescriptorSet);
 		}
 
-		Ref<VulkanDevice> device = Application::GetApp().GetVulkanDevice();
+		Ref<VulkanDevice> device = Application::GetVulkanDevice();
 		vkUpdateDescriptorSets(device->GetLogicalDevice(), writeDescriptors.size(), writeDescriptors.data(), 0, NULL);
 	}
 

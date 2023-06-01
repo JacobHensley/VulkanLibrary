@@ -82,6 +82,50 @@ namespace VkLibrary {
 			return std::find(formats.begin(), formats.end(), format) != std::end(formats);
 		}
 
+		VkDescriptorSet AllocateDescriptorSet(VkDescriptorPool pool, const VkDescriptorSetLayout* layouts, uint32_t count)
+		{
+			Ref<VulkanDevice> device = Application::GetApp().GetVulkanDevice();
+
+			VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+
+			VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
+			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			descriptorSetAllocateInfo.pSetLayouts = layouts;
+			descriptorSetAllocateInfo.descriptorSetCount = count;
+			descriptorSetAllocateInfo.descriptorPool = pool;
+
+			VK_CHECK_RESULT(vkAllocateDescriptorSets(device->GetLogicalDevice(), &descriptorSetAllocateInfo, &descriptorSet));
+			return descriptorSet;
+		}
+
+		VkWriteDescriptorSet WriteDescriptorSet(VkDescriptorSet dstSet, VkDescriptorType type, uint32_t binding, const VkDescriptorBufferInfo* bufferInfo, uint32_t descriptorCount)
+		{
+			VkWriteDescriptorSet writeDescriptorSet{};
+
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstSet = dstSet;
+			writeDescriptorSet.descriptorType = type;
+			writeDescriptorSet.dstBinding = binding;
+			writeDescriptorSet.pBufferInfo = bufferInfo;
+			writeDescriptorSet.descriptorCount = descriptorCount;
+
+			return writeDescriptorSet;
+		}
+
+		VkWriteDescriptorSet WriteDescriptorSet(VkDescriptorSet dstSet, VkDescriptorType type, uint32_t binding, const VkDescriptorImageInfo* imageInfo, uint32_t descriptorCount)
+		{
+			VkWriteDescriptorSet writeDescriptorSet{};
+
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstSet = dstSet;
+			writeDescriptorSet.descriptorType = type;
+			writeDescriptorSet.dstBinding = binding;
+			writeDescriptorSet.pImageInfo = imageInfo;
+			writeDescriptorSet.descriptorCount = descriptorCount;
+
+			return writeDescriptorSet;
+		}
+
 		void InsertImageMemoryBarrier(
 			VkCommandBuffer commandBuffer,
 			VkImage image,
@@ -249,7 +293,7 @@ namespace VkLibrary {
 			SetImageLayout(cmdbuffer, image, oldImageLayout, newImageLayout, subresourceRange, srcStageMask, dstStageMask);
 		}
 
-		VkDescriptorSetLayoutBinding CreateDescriptorSetLayoutBinding(VkDescriptorType type, VkShaderStageFlags stageFlags, uint32_t binding, uint32_t descriptorCount)
+		VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding(VkDescriptorType type, VkShaderStageFlags stageFlags, uint32_t binding, uint32_t descriptorCount)
 		{
 			VkDescriptorSetLayoutBinding setLayoutBinding = {};
 			setLayoutBinding.descriptorType = type;

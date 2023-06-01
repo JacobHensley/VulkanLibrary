@@ -39,17 +39,16 @@ namespace VkLibrary {
 		void Init();
 
 	private:
-		RayTracingPipelineSpecification m_Specification;
-
 		VkPipeline m_Pipeline = VK_NULL_HANDLE;
 		VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 		VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
 
+		Ref<Shader> m_Shader;
+
 		std::vector<uint8_t> m_ShaderHandleStorage;
 		std::vector<RTBufferInfo> m_ShaderBindingTable;
 
-		bool m_OwnLayout = false;
-		Ref<Shader> m_Shader;
+		RayTracingPipelineSpecification m_Specification;
 	};
 
 }

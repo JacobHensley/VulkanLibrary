@@ -34,6 +34,22 @@ namespace VkLibrary {
 		bool IsDepthFormat(VkFormat format);
 		bool IsStencilFormat(VkFormat format);
 
+		VkDescriptorSet AllocateDescriptorSet(VkDescriptorPool pool, const VkDescriptorSetLayout* layouts, uint32_t count = 1);
+
+		VkWriteDescriptorSet WriteDescriptorSet(
+			VkDescriptorSet dstSet,
+			VkDescriptorType type,
+			uint32_t binding,
+			const VkDescriptorBufferInfo* bufferInfo,
+			uint32_t descriptorCount = 1);
+
+		VkWriteDescriptorSet WriteDescriptorSet(
+			VkDescriptorSet dstSet,
+			VkDescriptorType type,
+			uint32_t binding,
+			const VkDescriptorImageInfo* imageInfo,
+			uint32_t descriptorCount = 1);
+
 		void InsertImageMemoryBarrier(
 			VkCommandBuffer commandBuffer,
 			VkImage image,
@@ -63,7 +79,7 @@ namespace VkLibrary {
 			VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 			VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
-		VkDescriptorSetLayoutBinding CreateDescriptorSetLayoutBinding(
+		VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding(
 			VkDescriptorType type, 
 			VkShaderStageFlags stageFlags, 
 			uint32_t binding, 

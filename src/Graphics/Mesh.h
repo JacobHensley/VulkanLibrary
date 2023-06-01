@@ -11,8 +11,8 @@ namespace VkLibrary {
 	struct Vertex
 	{
 		glm::vec3 Position{ 0.0f };
-		glm::vec3 Normal{ 0.0f };
 		glm::vec2 TextureCoords{ 0.0f };
+		glm::vec3 Normal{ 0.0f };
 		glm::vec4 Tangent{ 0.0f };
 	};
 
@@ -35,8 +35,8 @@ namespace VkLibrary {
 		uint32_t UseNormalMap = 0;
 
 		uint32_t AlbedoMapIndex = 0;
-		uint32_t NormalMapIndex = 0;
 		uint32_t MetallicRoughnessMapIndex = 0;
+		uint32_t NormalMapIndex = 0;
 	};
 
 	// TODO: Pull m_DefaultShader from some shader libary instead of creating one for every mesh

@@ -27,7 +27,7 @@ namespace VkLibrary {
 		ComputePipelineSpecification m_Specification;
 
 		VkPipeline m_Pipeline = VK_NULL_HANDLE;
-		bool m_OwnLayout = true;
+		bool m_OwnLayout = false;
 	};
 
 }

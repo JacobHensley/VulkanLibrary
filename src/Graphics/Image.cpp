@@ -207,6 +207,9 @@ namespace VkLibrary {
 
 	void Image::Resize(uint32_t width, uint32_t height)
 	{
+		if (width == m_Width && height == m_Height)
+			return;
+
 		Release();
 
 		m_Width = width;

@@ -15,7 +15,7 @@ namespace VkLibrary {
 		Reset();
 	}
 
-	void Camera::Update()
+	bool Camera::Update()
 	{
 		glm::vec2 mousePosition = Input::GetMousePosition();
 		glm::vec2 delta = mousePosition - m_InitialMousePosition;
@@ -47,6 +47,8 @@ namespace VkLibrary {
 		{
 			RecalculateView();
 		}
+
+		return moved;
 	}
 
 	void Camera::Reset()
@@ -69,18 +71,20 @@ namespace VkLibrary {
 		m_Rotation = glm::eulerAngles(GetOrientation()) * (180.0f / (float)PI);
 	}
 
-	void Camera::Resize(uint32_t width, uint32_t height)
+	bool Camera::Resize(uint32_t width, uint32_t height)
 	{
-		if (width == m_ViewportWidth && height == m_ViewportHeight)
-			return;
+		if (width == m_Width && height == m_Height)
+			return false;
 
-		m_ViewportWidth = width;
-		m_ViewportHeight = height;
+		m_Width = width;
+		m_Height = height;
 
-		m_Projection = glm::perspectiveFov(glm::radians(m_VerticalFOV), (float)m_ViewportWidth, (float)m_ViewportHeight, m_NearClip, m_FarClip);
+		m_Projection = glm::perspectiveFov(glm::radians(m_VerticalFOV), (float)m_Width, (float)m_Height, m_NearClip, m_FarClip);
 		m_InverseProjection = glm::inverse(m_Projection);
 
 		RecalculateView();
+
+		return true;
 	}
 
 	void Camera::MousePan(const glm::vec2& delta)

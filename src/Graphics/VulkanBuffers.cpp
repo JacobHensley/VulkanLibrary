@@ -5,12 +5,12 @@
 namespace VkLibrary {
 
     VertexBuffer::VertexBuffer(void* data, uint32_t size, const std::string& debugName)
-        : m_DebugName(debugName)
+        : m_Size(size), m_DebugName(debugName)
     {
         VkBufferCreateInfo bufferCreateInfo = {};
         bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferCreateInfo.size = size;
-        bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+        bufferCreateInfo.size = m_Size;
+        bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         VulkanAllocator allocator(m_DebugName);
@@ -21,7 +21,7 @@ namespace VkLibrary {
         if (data)
         {
             void* dstBuffer = allocator.MapMemory<void>(m_BufferInfo.Allocation);
-            memcpy(dstBuffer, data, size);
+            memcpy(dstBuffer, data, m_Size);
             allocator.UnmapMemory(m_BufferInfo.Allocation);
         }
     }
@@ -32,13 +32,21 @@ namespace VkLibrary {
         allocator.DestroyBuffer(m_BufferInfo.Buffer, m_BufferInfo.Allocation);
     }
 
+    void VertexBuffer::SetData(void* data)
+    {
+        VulkanAllocator allocator("VertexBuffer");
+        void* dstBuffer = allocator.MapMemory<void>(m_BufferInfo.Allocation);
+        memcpy(dstBuffer, data, m_Size);
+        allocator.UnmapMemory(m_BufferInfo.Allocation);
+    }
+
     IndexBuffer::IndexBuffer(void* data, uint32_t size, uint32_t count, const std::string& debugName)
-        : m_Count(count), m_DebugName(debugName)
+        : m_Size(size), m_Count(count), m_DebugName(debugName)
     {
         VkBufferCreateInfo bufferCreateInfo = {};
         bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferCreateInfo.size = size;
-        bufferCreateInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+        bufferCreateInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         VulkanAllocator allocator(m_DebugName);
@@ -60,8 +68,16 @@ namespace VkLibrary {
         allocator.DestroyBuffer(m_BufferInfo.Buffer, m_BufferInfo.Allocation);
     }
 
+    void IndexBuffer::SetData(void* data)
+    {
+        VulkanAllocator allocator("IndexBuffer");
+        void* dstBuffer = allocator.MapMemory<void>(m_BufferInfo.Allocation);
+        memcpy(dstBuffer, data, m_Size);
+        allocator.UnmapMemory(m_BufferInfo.Allocation);
+    }
+
     StagingBuffer::StagingBuffer(void* data, uint32_t size, const std::string& debugName)
-        : m_DebugName(debugName)
+        : m_Size(size), m_DebugName(debugName)
     {
         VkBufferCreateInfo bufferCreateInfo = {};
         bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -88,8 +104,16 @@ namespace VkLibrary {
         allocator.DestroyBuffer(m_BufferInfo.Buffer, m_BufferInfo.Allocation);
     }
 
+    void StagingBuffer::SetData(void* data)
+    {
+        VulkanAllocator allocator("StagingBuffer");
+        void* dstBuffer = allocator.MapMemory<void>(m_BufferInfo.Allocation);
+        memcpy(dstBuffer, data, m_Size);
+        allocator.UnmapMemory(m_BufferInfo.Allocation);
+    }
+
     UniformBuffer::UniformBuffer(void* data, uint32_t size, const std::string& debugName)
-        : m_DebugName(debugName)
+        : m_Size(size), m_DebugName(debugName)
     {
         VkBufferCreateInfo bufferCreateInfo = {};
         bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -120,8 +144,16 @@ namespace VkLibrary {
         allocator.DestroyBuffer(m_BufferInfo.Buffer, m_BufferInfo.Allocation);
     }
 
+    void UniformBuffer::SetData(void* data)
+    {
+        VulkanAllocator allocator("UniformBuffer");
+        void* dstBuffer = allocator.MapMemory<void>(m_BufferInfo.Allocation);
+        memcpy(dstBuffer, data, m_Size);
+        allocator.UnmapMemory(m_BufferInfo.Allocation);
+    }
+
     StorageBuffer::StorageBuffer(void* data, uint32_t size, const std::string& debugName)
-        : m_DebugName(debugName), m_Size(size)
+        : m_Size(size), m_DebugName(debugName)
     {
         VkBufferCreateInfo bufferCreateInfo = {};
         bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -150,6 +182,14 @@ namespace VkLibrary {
     {
         VulkanAllocator allocator(m_DebugName);
         allocator.DestroyBuffer(m_BufferInfo.Buffer, m_BufferInfo.Allocation);
+    }
+
+    void StorageBuffer::SetData(void* data)
+    {
+        VulkanAllocator allocator("StorageBuffer");
+        void* dstBuffer = allocator.MapMemory<void>(m_BufferInfo.Allocation);
+        memcpy(dstBuffer, data, m_Size);
+        allocator.UnmapMemory(m_BufferInfo.Allocation);
     }
 
 }

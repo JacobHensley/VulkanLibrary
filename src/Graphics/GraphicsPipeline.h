@@ -14,6 +14,8 @@ namespace VkLibrary {
 		bool Blend = true;
 	};
 
+	// NOTE: Possible problem with deleting pipeline layouts not owned by this class
+
 	class GraphicsPipeline
 	{
 	public:
@@ -28,9 +30,9 @@ namespace VkLibrary {
 		void Init();
 
 	private:
-		GraphicsPipelineSpecification m_Specification;
-
 		VkPipeline m_Pipeline = VK_NULL_HANDLE;
 		VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
+
+		GraphicsPipelineSpecification m_Specification;
 	};
 }

@@ -26,9 +26,9 @@ namespace VkLibrary {
 		Camera(CameraSpecification specification);
 
 	public:
-		void Update();
+		bool Update();
 		void Reset();
-		void Resize(uint32_t width, uint32_t height);
+		bool Resize(uint32_t width, uint32_t height);
 
 		const glm::mat4& GetProjection() const { return m_Projection; }
 		const glm::mat4& GetInverseProjection() const { return m_InverseProjection; }
@@ -83,8 +83,8 @@ namespace VkLibrary {
 		float m_ZoomSpeed = 0.0f;
 
 		glm::vec2 m_InitialMousePosition;
-		uint32_t m_ViewportWidth = 0;
-		uint32_t m_ViewportHeight = 0;
+		uint32_t m_Width = 0;
+		uint32_t m_Height = 0;
 
 		CameraSpecification m_Specification;
 	};

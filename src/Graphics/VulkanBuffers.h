@@ -9,6 +9,8 @@ namespace VkLibrary {
 		VkBuffer Buffer = nullptr;
 		VmaAllocation Allocation = nullptr;
 	};
+	
+	// TODO: Increase buffer flexibility through specifications and enums
 
 	class VertexBuffer
 	{
@@ -18,6 +20,9 @@ namespace VkLibrary {
 
 	public:
 		VkBuffer GetBuffer() { return m_BufferInfo.Buffer; }
+		uint32_t GetSize() { return m_Size; }
+
+		void SetData(void* data);
 
 		template<typename T>
 		T* Map()
@@ -34,6 +39,7 @@ namespace VkLibrary {
 		
 	private:
 		BufferInfo m_BufferInfo;
+		uint32_t m_Size = 0;
 		const std::string m_DebugName;
 	};
 
@@ -45,7 +51,10 @@ namespace VkLibrary {
 
 	public:
 		VkBuffer GetBuffer() { return m_BufferInfo.Buffer; }
+		uint32_t GetSize() { return m_Size; }
 		uint32_t GetCount() { return m_Count; }
+
+		void SetData(void* data);
 
 		template<typename T>
 		T* Map()
@@ -62,6 +71,7 @@ namespace VkLibrary {
 
 	private:
 		BufferInfo m_BufferInfo;
+		uint32_t m_Size = 0;
 		uint32_t m_Count = 0;
 		const std::string m_DebugName;
 	};
@@ -74,6 +84,9 @@ namespace VkLibrary {
 
 	public:
 		VkBuffer GetBuffer() { return m_BufferInfo.Buffer; }
+		uint32_t GetSize() { return m_Size; }
+
+		void SetData(void* data);
 
 		template<typename T>
 		T* Map()
@@ -90,6 +103,7 @@ namespace VkLibrary {
 
 	private:
 		BufferInfo m_BufferInfo;
+		uint32_t m_Size = 0;
 		const std::string m_DebugName;
 	};
 
@@ -101,7 +115,10 @@ namespace VkLibrary {
 
 	public:
 		VkBuffer GetBuffer() { return m_BufferInfo.Buffer; }
+		uint32_t GetSize() { return m_Size; }
 		const VkDescriptorBufferInfo& GetDescriptorBufferInfo() { return m_DescriptorBufferInfo; }
+
+		void SetData(void* data);
 
 		template<typename T>
 		T* Map()
@@ -118,6 +135,7 @@ namespace VkLibrary {
 
 	private:
 		BufferInfo m_BufferInfo;
+		uint32_t m_Size = 0;
 		VkDescriptorBufferInfo m_DescriptorBufferInfo;
 		const std::string m_DebugName;
 	};
@@ -131,6 +149,9 @@ namespace VkLibrary {
 	public:
 		VkBuffer GetBuffer() { return m_BufferInfo.Buffer; }
 		uint32_t GetSize() { return m_Size; }
+		const VkDescriptorBufferInfo& GetDescriptorBufferInfo() { return m_DescriptorBufferInfo; }
+
+		void SetData(void* data);
 
 		template<typename T>
 		T* Map()
@@ -147,8 +168,8 @@ namespace VkLibrary {
 
 	private:
 		BufferInfo m_BufferInfo;
+		uint32_t m_Size = 0;
 		VkDescriptorBufferInfo m_DescriptorBufferInfo;
-		uint32_t m_Size;
 		const std::string m_DebugName;
 	};
 

@@ -34,7 +34,7 @@ namespace VkLibrary {
 
 		Log::Init();
 
-		m_Window = CreateRef<Window>(m_Name, 1280, 720);
+		m_Window = CreateRef<Window>(m_Name, 1920, 1080);
 		m_VulkanInstance = CreateRef<VulkanInstance>(m_Name);
 		m_Window->SetResizeCallback([this](uint32_t width, uint32_t height) { OnWindowResize(width, height); });
 		m_Window->InitVulkanSurface();
@@ -47,8 +47,6 @@ namespace VkLibrary {
 
 	void Application::OnUpdate()
 	{
-		m_Window->OnUpdate();
-
 		for (auto& layer : m_Layers)
 		{
 			layer->OnUpdate();
@@ -85,14 +83,15 @@ namespace VkLibrary {
 	{
 		while (!m_Window->IsClosed())
 		{
-			OnUpdate();
-			OnImGUIRender();
-			
+			m_Window->OnUpdate();
+
 			if (!m_Window->IsMinimized())
 			{
 				m_Swapchain->BeginFrame();
 
-				OnRender();
+				OnUpdate();
+				OnRender();	
+				OnImGUIRender();
 
 				m_ImGUIContext->RenderDrawLists();
 				m_Swapchain->Present();

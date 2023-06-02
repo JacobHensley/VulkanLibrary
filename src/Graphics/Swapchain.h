@@ -63,6 +63,7 @@ namespace VkLibrary {
 
 		uint32_t m_CurrentImageIndex = 0;
 		uint32_t m_CurrentBufferIndex = 0;
+		uint32_t m_ImageSemaphoreIndex = 0;
 
 		std::vector<VkSemaphore> m_PresentCompleteSemaphores;
 		std::vector<VkSemaphore> m_RenderCompleteSemaphores;

@@ -93,13 +93,13 @@ namespace VkLibrary {
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			vkDestroySemaphore(device->GetLogicalDevice(), m_PresentCompleteSemaphores[i], nullptr);
+			vkDestroySemaphore(device->GetLogicalDevice(), m_RenderCompleteSemaphores[i], nullptr);
 			vkDestroyFence(device->GetLogicalDevice(), m_WaitFences[i], nullptr);
 		}
 
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < m_ImageCount; i++)
 		{
-			vkDestroySemaphore(device->GetLogicalDevice(), m_RenderCompleteSemaphores[i], nullptr);
+			vkDestroySemaphore(device->GetLogicalDevice(), m_PresentCompleteSemaphores[i], nullptr);
 		}
 
 		vkDestroyCommandPool(device->GetLogicalDevice(), m_CommandPool, nullptr);
@@ -108,7 +108,7 @@ namespace VkLibrary {
 	void Swapchain::BeginFrame()
 	{
 		Ref<VulkanDevice> device = Application::GetVulkanDevice();
-		VK_CHECK_RESULT(vkAcquireNextImageKHR(device->GetLogicalDevice(), m_Swapchain, UINT64_MAX, m_PresentCompleteSemaphores[m_CurrentBufferIndex], VK_NULL_HANDLE, &m_CurrentImageIndex));
+		VK_CHECK_RESULT(vkAcquireNextImageKHR(device->GetLogicalDevice(), m_Swapchain, UINT64_MAX, m_PresentCompleteSemaphores[m_ImageSemaphoreIndex], VK_NULL_HANDLE, &m_CurrentImageIndex));
 	}
 
 	void Swapchain::Present()
@@ -120,17 +120,17 @@ namespace VkLibrary {
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &m_PresentCompleteSemaphores[m_CurrentBufferIndex];
+		submitInfo.pWaitSemaphores = &m_PresentCompleteSemaphores[m_ImageSemaphoreIndex];
 		submitInfo.pWaitDstStageMask = &waitStage;
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &m_CommandBuffers[m_CurrentBufferIndex];
 		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &m_RenderCompleteSemaphores[m_CurrentImageIndex];
+		submitInfo.pSignalSemaphores = &m_RenderCompleteSemaphores[m_CurrentBufferIndex];
 
 		VK_CHECK_RESULT(vkResetFences(device->GetLogicalDevice(), 1, &m_WaitFences[m_CurrentBufferIndex]));
 		VK_CHECK_RESULT(vkQueueSubmit(device->GetGraphicsQueue(), 1, &submitInfo, m_WaitFences[m_CurrentBufferIndex]));
 
-		VkResult result = QueuePresent(device->GetGraphicsQueue(), m_CurrentImageIndex, m_RenderCompleteSemaphores[m_CurrentImageIndex]);
+		VkResult result = QueuePresent(device->GetGraphicsQueue(), m_CurrentImageIndex, m_RenderCompleteSemaphores[m_CurrentBufferIndex]);
 
 		if (result != VK_SUCCESS)
 		{
@@ -145,6 +145,7 @@ namespace VkLibrary {
 		}
 
 		m_CurrentBufferIndex = (m_CurrentBufferIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+		m_ImageSemaphoreIndex = (m_ImageSemaphoreIndex + 1) % m_ImageCount;
 		VK_CHECK_RESULT(vkWaitForFences(device->GetLogicalDevice(), 1, &m_WaitFences[m_CurrentBufferIndex], VK_TRUE, UINT64_MAX));
 	}
 
@@ -328,8 +329,8 @@ namespace VkLibrary {
 	{
 		Ref<VulkanDevice> device = Application::GetVulkanDevice();
 
-		m_PresentCompleteSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-		m_RenderCompleteSemaphores.resize(m_ImageCount);
+		m_PresentCompleteSemaphores.resize(m_ImageCount);
+		m_RenderCompleteSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		m_WaitFences.resize(MAX_FRAMES_IN_FLIGHT);
 
 		// Semaphore info
@@ -344,13 +345,13 @@ namespace VkLibrary {
 		// Create synchronization objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			VK_CHECK_RESULT(vkCreateSemaphore(device->GetLogicalDevice(), &semaphoreInfo, nullptr, &m_PresentCompleteSemaphores[i]));
+			VK_CHECK_RESULT(vkCreateSemaphore(device->GetLogicalDevice(), &semaphoreInfo, nullptr, &m_RenderCompleteSemaphores[i]));
 			VK_CHECK_RESULT(vkCreateFence(device->GetLogicalDevice(), &fenceInfo, nullptr, &m_WaitFences[i]));
 		}
 
 		for (size_t i = 0; i < m_ImageCount; i++)
 		{
-			VK_CHECK_RESULT(vkCreateSemaphore(device->GetLogicalDevice(), &semaphoreInfo, nullptr, &m_RenderCompleteSemaphores[i]));
+			VK_CHECK_RESULT(vkCreateSemaphore(device->GetLogicalDevice(), &semaphoreInfo, nullptr, &m_PresentCompleteSemaphores[i]));
 		}
 	}
 

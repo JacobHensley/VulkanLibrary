@@ -39,6 +39,8 @@ namespace VkLibrary {
 			{
 				MaterialBuffer buffer = material;
 				buffer.AlbedoMapIndex += m_TextureIndexOffset;
+				buffer.MetallicRoughnessMapIndex += m_TextureIndexOffset;
+				buffer.NormalMapIndex += m_TextureIndexOffset;
 				m_MaterialData.emplace_back(buffer);
 			}
 			for (const auto& texture : m_Specification.Mesh->GetTextures())

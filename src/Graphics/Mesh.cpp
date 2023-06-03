@@ -209,11 +209,11 @@ namespace VkLibrary {
 
 				Texture2DSpecification textureSpec;
 				textureSpec.path = m_Path.parent_path() / image.uri;
-				textureSpec.DebugName = (m_Path.filename().string()  + ", Albedo Texture");
+				textureSpec.DebugName = (m_Path.filename().string() + ", Albedo Texture");
 
 				m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
-				material.AlbedoMapIndex = albedoTextureIndex;
+				material.AlbedoMapIndex = (uint32_t)m_Textures.size() - 1;
 				albedoValue = glm::vec3(1.0f);
 			}
 
@@ -230,7 +230,7 @@ namespace VkLibrary {
 
 				m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
-				material.MetallicRoughnessMapIndex = metallicRoughnessTextureIndex;
+				material.MetallicRoughnessMapIndex = (uint32_t)m_Textures.size() - 1;
 				metallicValue = 1.0f;
 				roughnessValue = 1.0f;
 			}
@@ -248,7 +248,7 @@ namespace VkLibrary {
 
 				m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
-				material.NormalMapIndex = normalTextureIndex;
+				material.NormalMapIndex = (uint32_t)m_Textures.size() - 1;
 				useNormalMap = 1.0f;
 			}
 

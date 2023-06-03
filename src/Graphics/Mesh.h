@@ -34,9 +34,9 @@ namespace VkLibrary {
 		float RoughnessValue = 1.0f;
 		uint32_t UseNormalMap = 0;
 
-		uint32_t AlbedoMapIndex = 0;
-		uint32_t MetallicRoughnessMapIndex = 0;
-		uint32_t NormalMapIndex = 0;
+		int AlbedoMapIndex = -1;
+		int MetallicRoughnessMapIndex = -1;
+		int NormalMapIndex = -1;
 	};
 
 	// TODO: Pull m_DefaultShader from some shader libary instead of creating one for every mesh

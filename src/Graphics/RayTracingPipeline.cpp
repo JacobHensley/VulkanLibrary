@@ -59,7 +59,7 @@ namespace VkLibrary {
 
 		const uint32_t MaxStorageBufferDescriptorCount = 2048;
 
-		std::array<VkDescriptorSetLayoutBinding, 10> layoutBindings = {
+		std::array<VkDescriptorSetLayoutBinding, 11> layoutBindings = {
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0),
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 1),
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 2),
@@ -70,20 +70,22 @@ namespace VkLibrary {
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 7),
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 8),
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 9, MaxStorageBufferDescriptorCount),
+			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 10),
 		};
 
 		std::array<VkDescriptorBindingFlags, layoutBindings.size()> bindingFlags =
 		{
-			0,											// Binding 0: Acceleration Structure
-			0,											// Binding 1: Storage Image
-			0,											// Binding 2: Storage Image
-			0,											// Binding 3: Camera Uniform Buffer
-			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,	// Binding 4: Vertex Buffers
-			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,	// Binding 5: Index Buffers
-			0,											// Binding 6: Submesh Data
-			0,											// Binding 7: Scene Buffer
-			0,											// Binding 8: Material Buffer
-			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,	// Binding 9: Textures
+			0,											// Binding 0:  Acceleration Structure
+			0,											// Binding 1:  Storage Image
+			0,											// Binding 2:  Storage Image
+			0,											// Binding 3:  Camera Uniform Buffer
+			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,	// Binding 4:  Vertex Buffers
+			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,	// Binding 5:  Index Buffers
+			0,											// Binding 6:  Submesh Data
+			0,											// Binding 7:  Scene Buffer
+			0,											// Binding 8:  Material Buffer
+			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,	// Binding 9:  Textures
+			0,											// Binding 10: Skybox
 		};
 
 		VkDescriptorSetLayoutBindingFlagsCreateInfo descriptorSetLayoutBindingsCreateInfo{};

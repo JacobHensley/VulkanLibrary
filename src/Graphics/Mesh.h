@@ -32,6 +32,9 @@ namespace VkLibrary {
 		glm::vec3 AlbedoValue{ 0.8f };
 		float MetallicValue = 0.0f;
 		float RoughnessValue = 1.0f;
+		glm::vec3 EmissiveValue{ 0.0f };
+		float EmissiveStrength = 1.0f;
+
 		uint32_t UseNormalMap = 0;
 
 		int AlbedoMapIndex = -1;
@@ -40,7 +43,6 @@ namespace VkLibrary {
 	};
 
 	// TODO: Pull m_DefaultShader from some shader libary instead of creating one for every mesh
-	// TODO: Rename WorldTransform
 
 	class Mesh
 	{

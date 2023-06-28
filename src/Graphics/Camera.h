@@ -10,7 +10,7 @@ namespace VkLibrary {
 		float farClip = 100.0f;
 
 		float panSpeed = 0.001f;
-		float rotationSpeed = 0.001;
+		float rotationSpeed = 0.001f;
 		float zoomSpeed = 2.0f;
 
 		float distance = 5.0f;

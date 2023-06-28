@@ -198,8 +198,10 @@ namespace VkLibrary {
 			glm::vec3 albedoValue = glm::make_vec3(&gltfMaterial.pbrMetallicRoughness.baseColorFactor[0]);
 			float metallicValue = gltfMaterial.pbrMetallicRoughness.metallicFactor;
 			float roughnessValue = gltfMaterial.pbrMetallicRoughness.roughnessFactor;
+			glm::vec3 emissiveValue = glm::make_vec3(&gltfMaterial.emissiveFactor[0]);
+			float emissiveStrength = 1.0f;
 			float useNormalMap = 0.0f;
-
+		
 			// Albedo texture
 			uint32_t albedoTextureIndex = gltfMaterial.pbrMetallicRoughness.baseColorTexture.index;
 			if (albedoTextureIndex != -1)
@@ -252,9 +254,17 @@ namespace VkLibrary {
 				useNormalMap = 1.0f;
 			}
 
+			// Load extension data
+			if (gltfMaterial.extensions.find("KHR_materials_emissive_strength") != gltfMaterial.extensions.end())
+			{
+				emissiveStrength = (float)gltfMaterial.extensions.at("KHR_materials_emissive_strength").Get("emissiveStrength").GetNumberAsDouble();
+			}
+
 			material.AlbedoValue = albedoValue;
 			material.MetallicValue = metallicValue;
 			material.RoughnessValue = roughnessValue;
+			material.EmissiveValue = emissiveValue;
+			material.EmissiveStrength = emissiveStrength;
 			material.UseNormalMap =  useNormalMap;
 		}
 	}

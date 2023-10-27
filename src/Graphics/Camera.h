@@ -3,21 +3,33 @@
 
 namespace VkLibrary {
 
+	enum class CameraType
+	{
+		NONE = -1, EDITOR, POV
+	};
+
 	struct CameraSpecification
 	{
 		float verticalFOV = 45.0f;
 		float nearClip = 0.1f;
 		float farClip = 100.0f;
 
+		CameraType cameraType = CameraType::POV;
+
+		// Editor camera settings
 		float panSpeed = 0.001f;
 		float rotationSpeed = 0.001f;
 		float zoomSpeed = 2.0f;
-
 		float distance = 5.0f;
 		float pitch = 25.0f;
 		float yaw = 35.0f;
-
 		glm::vec3 focalPoint = glm::vec3(0.0f);
+
+		// POV camera settings
+		float forwardBackwardSpeed = 0.1;
+		float leftRightSpeed = 0.1;
+		float upDownSpeed = 0.1;
+		float lookSpeed = 0.002f;
 	};
 
 	class Camera
@@ -43,8 +55,11 @@ namespace VkLibrary {
 		const glm::vec3& GetRotation() const { return m_Rotation; }
 
 	private:
+		bool HandleEditorCameraMovement(const glm::vec2& delta);
+		bool HandlePOVCameraMovement(const glm::vec2& delta);
+
 		void MousePan(const glm::vec2& delta);
-		void MouseRotate(const glm::vec2& delta);
+		void MouseRotate(const glm::vec2& delta, float speed);
 		void MouseZoom(float delta);
 		
 		void RecalculateView();

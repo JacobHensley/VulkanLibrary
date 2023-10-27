@@ -23,26 +23,13 @@ namespace VkLibrary {
 
 		bool moved = false;
 
-		if (Input::IsKeyPressed(KEY_LEFT_SHIFT) && Input::IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE))
-		{
-			MousePan(delta);
-			moved = true;
-		}
-		else if (Input::IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE))
-		{
-			MouseRotate(delta);
-			moved = true;
-		}
+		if (m_Specification.cameraType == CameraType::EDITOR)
+			moved = HandleEditorCameraMovement(delta);
+		else
+			moved = HandlePOVCameraMovement(delta);
 
-		if (Input::IsMouseScrolling())
-		{
-			MouseZoom(Input::GetMouseScrollwheel());
-			moved = true;
-		}
-
-		m_Position = CalculatePosition();
 		m_Rotation = glm::eulerAngles(GetOrientation()) * (180.0f / (float)PI);
-
+		
 		if (moved)
 		{
 			RecalculateView();
@@ -87,17 +74,91 @@ namespace VkLibrary {
 		return true;
 	}
 
+	bool Camera::HandleEditorCameraMovement(const glm::vec2& delta)
+	{
+		bool moved = false;
+
+		if (Input::IsKeyPressed(KEY_LEFT_SHIFT) && Input::IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE))
+		{
+			MousePan(delta);
+			moved = true;
+		}
+		else if (Input::IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE))
+		{
+			MouseRotate(delta, m_Specification.rotationSpeed);
+			moved = true;
+		}
+
+		if (Input::IsMouseScrolling())
+		{
+			MouseZoom(Input::GetMouseScrollwheel());
+			moved = true;
+		}
+
+		m_Position = CalculatePosition();
+
+		return moved;
+	}
+
+	bool Camera::HandlePOVCameraMovement(const glm::vec2& delta)
+	{
+		bool moved = false;
+
+		float speed = 0.05;
+
+		if (Input::IsKeyPressed(KEY_W))
+		{
+			m_Position += GetForwardDirection() * glm::vec3(m_Specification.forwardBackwardSpeed);
+			moved = true;
+		}
+		else if (Input::IsKeyPressed(KEY_S))
+		{
+			m_Position += -GetForwardDirection() * glm::vec3(m_Specification.forwardBackwardSpeed);
+			moved = true;
+		}
+
+		if (Input::IsKeyPressed(KEY_D))
+		{
+			m_Position += GetRightDirection() * glm::vec3(m_Specification.leftRightSpeed);
+			moved = true;
+		}
+		else if (Input::IsKeyPressed(KEY_A))
+		{
+			m_Position += -GetRightDirection() * glm::vec3(m_Specification.leftRightSpeed);
+			moved = true;
+		}
+
+		if (Input::IsKeyPressed(KEY_SPACE))
+		{
+			m_Position += GetUpDirection() * glm::vec3(m_Specification.upDownSpeed);
+			moved = true;
+		}
+		else if (Input::IsKeyPressed(KEY_LEFT_SHIFT))
+		{
+			m_Position += -GetUpDirection() * glm::vec3(m_Specification.upDownSpeed);
+			moved = true;
+		}
+
+		if (Input::IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+		{
+			MouseRotate(delta, m_Specification.lookSpeed);
+			moved = true;
+		}
+
+		return moved;
+	}
+
 	void Camera::MousePan(const glm::vec2& delta)
 	{
 		m_FocalPoint += -GetRightDirection() * delta.x * m_PanSpeed * m_Distance;
 		m_FocalPoint += GetUpDirection() * delta.y * m_PanSpeed * m_Distance;
 	}
 
-	void Camera::MouseRotate(const glm::vec2& delta)
+	void Camera::MouseRotate(const glm::vec2& delta, float speed)
 	{
 		float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
-		m_Yaw += yawSign * delta.x * m_RotationSpeed;
-		m_Pitch += delta.y * m_RotationSpeed;
+		m_Yaw += yawSign * delta.x * speed;
+		m_Pitch += delta.y * speed;
 	}
 
 	void Camera::MouseZoom(float delta)

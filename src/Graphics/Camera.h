@@ -97,7 +97,7 @@ namespace VkLibrary {
 		float m_RotationSpeed = 0.0f;
 		float m_ZoomSpeed = 0.0f;
 
-		glm::vec2 m_InitialMousePosition;
+		glm::vec2 m_InitialMousePosition = {0, 0};
 		uint32_t m_Width = 0;
 		uint32_t m_Height = 0;
 

@@ -59,6 +59,9 @@ namespace VkLibrary {
 
 		int subMeshVertexOffset = 0;
 		int subMeshIndexOffset = 0;
+		int subMeshTriangleOffset = 0;
+
+		m_BoundingBox = AABB({ UINT64_MAX,UINT64_MAX,UINT64_MAX }, { -(float)UINT64_MAX,-(float)UINT64_MAX,-(float)UINT64_MAX });
 
 		for (int i = 0; i < m_Model.meshes.size(); i++)
 		{
@@ -68,6 +71,8 @@ namespace VkLibrary {
 			{
 				int subMeshVertexCount = 0;
 				int subMeshIndexCount = 0;
+				int subMeshTriangleCount = 0;
+				AABB subMeshBoundingBox = AABB({ UINT64_MAX,UINT64_MAX,UINT64_MAX }, { -(float)UINT64_MAX,-(float)UINT64_MAX,-(float)UINT64_MAX });
 
 				const tinygltf::Primitive& primitive = mesh.primitives[i];
 
@@ -90,6 +95,14 @@ namespace VkLibrary {
 						m_Vertices[subMeshVertexOffset + j].Position.x = positions[j * 3 + 0];
 						m_Vertices[subMeshVertexOffset + j].Position.y = positions[j * 3 + 1];
 						m_Vertices[subMeshVertexOffset + j].Position.z = positions[j * 3 + 2];
+
+						subMeshBoundingBox.Min.x = glm::min(m_Vertices[subMeshVertexOffset + j].Position.x, subMeshBoundingBox.Min.x);
+						subMeshBoundingBox.Min.y = glm::min(m_Vertices[subMeshVertexOffset + j].Position.y, subMeshBoundingBox.Min.y);
+						subMeshBoundingBox.Min.z = glm::min(m_Vertices[subMeshVertexOffset + j].Position.z, subMeshBoundingBox.Min.z);
+
+						subMeshBoundingBox.Max.x = glm::max(m_Vertices[subMeshVertexOffset + j].Position.x, subMeshBoundingBox.Max.x);
+						subMeshBoundingBox.Max.y = glm::max(m_Vertices[subMeshVertexOffset + j].Position.y, subMeshBoundingBox.Max.y);
+						subMeshBoundingBox.Max.z = glm::max(m_Vertices[subMeshVertexOffset + j].Position.z, subMeshBoundingBox.Max.z);
 					}
 				}
 
@@ -159,7 +172,16 @@ namespace VkLibrary {
 						for (int j = 0; j < accessor.count; j++)
 						{
 							m_Indices[subMeshIndexOffset + j] = indices[j];
-						}	
+						}
+
+						for (size_t j = 0; j < accessor.count; j += 3) 
+						{
+							Triangle& triangle = m_Triangles.emplace_back();
+							triangle.Points[0] = m_Vertices[subMeshVertexOffset + indices[j + 0]].Position;
+							triangle.Points[1] = m_Vertices[subMeshVertexOffset + indices[j + 1]].Position;
+							triangle.Points[2] = m_Vertices[subMeshVertexOffset + indices[j + 2]].Position;
+							subMeshTriangleCount++;
+						}
 					}
 					else if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
 					{
@@ -167,23 +189,44 @@ namespace VkLibrary {
 						for (int j = 0; j < accessor.count; j++)
 						{
 							m_Indices[subMeshIndexOffset + j] = (uint32_t)indices[j];
-						}	
+						}
 					}
 					else
 					{
 						ASSERT(false, "Mesh indices are not in the correct format");
 					}
+
+					for (size_t j = 0; j < accessor.count; j += 3)
+					{
+						Triangle& triangle = m_Triangles.emplace_back();
+						triangle.Points[0] = m_Vertices[subMeshVertexOffset + m_Indices[subMeshIndexOffset + j + 0]].Position;
+						triangle.Points[1] = m_Vertices[subMeshVertexOffset + m_Indices[subMeshIndexOffset + j + 1]].Position;
+						triangle.Points[2] = m_Vertices[subMeshVertexOffset + m_Indices[subMeshIndexOffset + j + 2]].Position;
+						subMeshTriangleCount++;
+					}
 				}
+
+				m_BoundingBox.Min.x = glm::min(subMeshBoundingBox.Min.x, m_BoundingBox.Min.x);
+				m_BoundingBox.Min.y = glm::min(subMeshBoundingBox.Min.y, m_BoundingBox.Min.y);
+				m_BoundingBox.Min.z = glm::min(subMeshBoundingBox.Min.z, m_BoundingBox.Min.z);
+
+				m_BoundingBox.Max.x = glm::max(subMeshBoundingBox.Max.x, m_BoundingBox.Max.x);
+				m_BoundingBox.Max.y = glm::max(subMeshBoundingBox.Max.y, m_BoundingBox.Max.y);
+				m_BoundingBox.Max.z = glm::max(subMeshBoundingBox.Max.z, m_BoundingBox.Max.z);
 
 				SubMesh& subMesh = m_SubMeshes.emplace_back();
 				subMesh.IndexCount = subMeshIndexCount;
 				subMesh.IndexOffset = subMeshIndexOffset;
 				subMesh.VertexCount = subMeshVertexCount;
 				subMesh.VertexOffset = subMeshVertexOffset;
+				subMesh.TriangleCount = subMeshTriangleCount;
+				subMesh.TriangleOffset = subMeshTriangleOffset;
 				subMesh.MaterialIndex = primitive.material;
+				subMesh.BoundingBox = subMeshBoundingBox;
 
 				subMeshIndexOffset += subMeshIndexCount;
 				subMeshVertexOffset += subMeshVertexCount;
+				subMeshTriangleOffset += subMeshTriangleCount;
 			}
 		}
 	}
@@ -199,9 +242,17 @@ namespace VkLibrary {
 			float metallicValue = gltfMaterial.pbrMetallicRoughness.metallicFactor;
 			float roughnessValue = gltfMaterial.pbrMetallicRoughness.roughnessFactor;
 			glm::vec3 emissiveValue = glm::make_vec3(&gltfMaterial.emissiveFactor[0]);
+
+			// Default PBR values
 			float emissiveStrength = 1.0f;
 			float useNormalMap = 0.0f;
-		
+
+			// TODO: Pick default values
+			float ior = 1.0;
+			float specularColorFactor = 1.0;
+			float clearcoatFactor = 0.0;
+			float clearcoatRoughnessFactor = 0.0;
+
 			// Albedo texture
 			uint32_t albedoTextureIndex = gltfMaterial.pbrMetallicRoughness.baseColorTexture.index;
 			if (albedoTextureIndex != -1)
@@ -260,6 +311,22 @@ namespace VkLibrary {
 				emissiveStrength = (float)gltfMaterial.extensions.at("KHR_materials_emissive_strength").Get("emissiveStrength").GetNumberAsDouble();
 			}
 
+			if (gltfMaterial.extensions.find("KHR_materials_ior") != gltfMaterial.extensions.end())
+			{
+				ior = (float)gltfMaterial.extensions.at("KHR_materials_ior").Get("ior").GetNumberAsDouble();
+			}
+
+			if (gltfMaterial.extensions.find("KHR_materials_specular") != gltfMaterial.extensions.end())
+			{
+				specularColorFactor = (float)gltfMaterial.extensions.at("KHR_materials_specular").Get("specularColorFactor").GetNumberAsDouble();
+			}
+
+			if (gltfMaterial.extensions.find("KHR_materials_clearcoat") != gltfMaterial.extensions.end())
+			{
+				clearcoatFactor = (float)gltfMaterial.extensions.at("KHR_materials_clearcoat").Get("clearcoatFactor").GetNumberAsDouble();
+				clearcoatRoughnessFactor = (float)gltfMaterial.extensions.at("KHR_materials_clearcoat").Get("clearcoatRoughnessFactor").GetNumberAsDouble();
+			}
+
 			material.AlbedoValue = albedoValue;
 			material.MetallicValue = metallicValue;
 			material.RoughnessValue = roughnessValue;
@@ -267,6 +334,39 @@ namespace VkLibrary {
 			material.EmissiveStrength = emissiveStrength;
 			material.UseNormalMap =  useNormalMap;
 		}
+	}
+
+	bool Mesh::RayIntersection(Ray ray, const glm::mat4& transform)
+	{
+		float distance;
+		if (!ray.IntersectsAABB(m_BoundingBox, distance))
+			return false;
+
+		for (const auto& subMesh : m_SubMeshes)
+		{
+			AABB boundingBox = subMesh.BoundingBox;
+			boundingBox.Min = subMesh.WorldTransform * glm::vec4(boundingBox.Min, 1.0f);
+			boundingBox.Max = subMesh.WorldTransform * glm::vec4(boundingBox.Max, 1.0f);
+
+			bool intersects = ray.IntersectsAABB(boundingBox, distance);
+
+			if (intersects)
+			{
+				Ray localRay = ray;
+				localRay.Origin = glm::inverse(subMesh.WorldTransform) * glm::vec4(localRay.Origin, 1.0f);
+				localRay.Direction = glm::inverse(glm::mat3(subMesh.WorldTransform)) * localRay.Direction;
+
+				for (uint32_t i = subMesh.TriangleOffset; i < (subMesh.TriangleOffset + subMesh.TriangleCount); i++)
+				{
+					Triangle triangle = m_Triangles[i];
+
+					if (localRay.IntersectsTriangle(triangle))
+						return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	void Mesh::CalculateNodeTransforms(const tinygltf::Node& node, const tinygltf::Model& scene, const glm::mat4& parentTransform)

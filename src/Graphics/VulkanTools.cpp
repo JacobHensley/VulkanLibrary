@@ -82,6 +82,31 @@ namespace VkLibrary {
 			return std::find(formats.begin(), formats.end(), format) != std::end(formats);
 		}
 
+		VkDescriptorPool CreateDescriptorPool(std::vector<VkDescriptorPoolSize> poolSizes)
+		{
+			Ref<VulkanDevice> device = Application::GetApp().GetVulkanDevice();
+
+			if (poolSizes.size() == 0)
+			{
+				poolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 });
+				poolSizes.push_back({ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 });
+				poolSizes.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 });
+				poolSizes.push_back({ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 });
+			}
+
+			VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
+			descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			descriptorPoolCreateInfo.flags = 0;
+			descriptorPoolCreateInfo.maxSets = 1000;
+			descriptorPoolCreateInfo.poolSizeCount = 1;
+			descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
+
+			VkDescriptorPool pool;
+			VK_CHECK_RESULT(vkCreateDescriptorPool(device->GetLogicalDevice(), &descriptorPoolCreateInfo, nullptr, &pool));
+
+			return pool;
+		}
+
 		VkDescriptorSet AllocateDescriptorSet(VkDescriptorPool pool, const VkDescriptorSetLayout* layouts, uint32_t count)
 		{
 			Ref<VulkanDevice> device = Application::GetApp().GetVulkanDevice();

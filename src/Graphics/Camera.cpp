@@ -104,8 +104,6 @@ namespace VkLibrary {
 	{
 		bool moved = false;
 
-		float speed = 0.05;
-
 		if (Input::IsKeyPressed(KEY_W))
 		{
 			m_Position += GetForwardDirection() * glm::vec3(m_Specification.forwardBackwardSpeed);
@@ -139,7 +137,7 @@ namespace VkLibrary {
 			moved = true;
 		}
 
-		if (Input::IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+		if (Input::IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
 		{
 			MouseRotate(delta, m_Specification.lookSpeed);
 			moved = true;

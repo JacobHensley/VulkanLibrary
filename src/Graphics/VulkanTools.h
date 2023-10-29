@@ -33,6 +33,7 @@ namespace VkLibrary {
 
 		bool IsDepthFormat(VkFormat format);
 		bool IsStencilFormat(VkFormat format);
+		VkDescriptorPool CreateDescriptorPool(std::vector<VkDescriptorPoolSize> poolSizes = std::vector<VkDescriptorPoolSize>());
 
 		VkDescriptorSet AllocateDescriptorSet(VkDescriptorPool pool, const VkDescriptorSetLayout* layouts, uint32_t count = 1);
 

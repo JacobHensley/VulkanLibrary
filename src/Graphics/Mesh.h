@@ -60,13 +60,13 @@ namespace VkLibrary {
 		inline const std::vector<SubMesh>& GetSubMeshes() const { return m_SubMeshes; }
 		
 		inline const std::vector<Triangle>& GetTriangles() const { return m_Triangles; };
-		inline const std::vector<MaterialBuffer>& GetMaterialBuffers() const { return m_MaterialBuffers; };
+		inline std::vector<MaterialBuffer>& GetMaterialBuffers() { return m_MaterialBuffers; };
 		inline const std::vector<Ref<Texture2D>>& GetTextures() const { return m_Textures; }
 
 		inline Ref<VertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
 		inline Ref<IndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
 
-		bool RayIntersection(Ray ray, const glm::mat4& transform);
+		int RayIntersection(Ray ray, const glm::mat4& transform);
 
 	private:
 		void Init();

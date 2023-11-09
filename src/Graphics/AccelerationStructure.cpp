@@ -32,32 +32,43 @@ namespace VkLibrary {
 
 			CreateTopLevelAccelerationStructure();
 
-			// Materials
-			m_MaterialData.reserve(m_Specification.Mesh->GetMaterialBuffers().size()); // TODO: per mesh
-			m_Textures.reserve(m_Specification.Mesh->GetTextures().size()); // TODO: per mesh
-			for (const auto& material : m_Specification.Mesh->GetMaterialBuffers())
-			{
-				MaterialBuffer buffer = material;
-				buffer.AlbedoMapIndex += m_TextureIndexOffset;
-				buffer.MetallicRoughnessMapIndex += m_TextureIndexOffset;
-				buffer.NormalMapIndex += m_TextureIndexOffset;
-				m_MaterialData.emplace_back(buffer);
-			}
-			for (const auto& texture : m_Specification.Mesh->GetTextures())
-			{
-				m_Textures.emplace_back(texture);
-			}
+			UpdateMaterialData();
+		}
+	}
 
-			m_MaterialDataStorageBuffer = CreateRef<StorageBuffer>(nullptr, sizeof(MaterialBuffer) * m_MaterialData.size());
-			void* buffer = m_MaterialDataStorageBuffer->Map<void>();
-			memcpy(buffer, m_MaterialData.data(), m_MaterialDataStorageBuffer->GetSize());
-			m_MaterialDataStorageBuffer->Unmap();
+	void AccelerationStructure::UpdateMaterialData()
+	{
+		m_MaterialIndexOffset = 0;
+		m_TextureIndexOffset = 0;
 
-			m_MaterialIndexOffset += m_MaterialData.size();
-			m_TextureIndexOffset += m_Textures.size();
+		m_MaterialData = std::vector<MaterialBuffer>();
+		m_Textures = std::vector<Ref<Texture2D>>();
+
+		// Materials
+		m_MaterialData.reserve(m_Specification.Mesh->GetMaterialBuffers().size()); // TODO: per mesh
+		m_Textures.reserve(m_Specification.Mesh->GetTextures().size()); // TODO: per mesh
+		for (const auto& material : m_Specification.Mesh->GetMaterialBuffers())
+		{
+			MaterialBuffer buffer = material;
+			buffer.AlbedoMapIndex += m_TextureIndexOffset;
+			buffer.MetallicRoughnessMapIndex += m_TextureIndexOffset;
+			buffer.NormalMapIndex += m_TextureIndexOffset;
+			m_MaterialData.emplace_back(buffer);
+		}
+		for (const auto& texture : m_Specification.Mesh->GetTextures())
+		{
+			m_Textures.emplace_back(texture);
 		}
 
+		m_MaterialDataStorageBuffer = CreateRef<StorageBuffer>(nullptr, sizeof(MaterialBuffer) * m_MaterialData.size());
+		void* buffer = m_MaterialDataStorageBuffer->Map<void>();
+		memcpy(buffer, m_MaterialData.data(), m_MaterialDataStorageBuffer->GetSize());
+		m_MaterialDataStorageBuffer->Unmap();
+
+		m_MaterialIndexOffset += m_MaterialData.size();
+		m_TextureIndexOffset += m_Textures.size();
 	}
+
 
 	void AccelerationStructure::CreateTopLevelAccelerationStructure()
 	{

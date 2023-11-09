@@ -23,7 +23,7 @@ namespace VkLibrary {
 		bool IsMinimized() { return m_Minimized; }
 		bool IsClosed();
 
-		void SetMouseMode(bool enable);
+		void SetMouseCursorMode(bool enable);
 
 		void SetResizeCallback(const std::function<void(uint32_t, uint32_t)>& func) { m_ResizeCallback = func; }
 

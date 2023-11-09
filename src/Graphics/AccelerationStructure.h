@@ -39,6 +39,8 @@ namespace VkLibrary {
 		AccelerationStructure(const AccelerationStructureSpecification& specification);
 		~AccelerationStructure();
 
+		void UpdateMaterialData();
+
 		const VkAccelerationStructureKHR& GetAccelerationStructure() { return m_TopLevelAccelerationStructure.AccelerationStructure; }
 		Ref<StorageBuffer> GetSubmeshDataStorageBuffer() const { return m_SubmeshDataStorageBuffer; }
 

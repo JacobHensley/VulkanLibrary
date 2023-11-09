@@ -19,7 +19,7 @@ namespace VkLibrary {
 		{
 		}
 
-        bool IntersectsTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3)
+        float IntersectsTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3)
         {
             const float EPSILON = (float)0.0000001;
             glm::vec3 vertex0 = p1;
@@ -32,28 +32,28 @@ namespace VkLibrary {
             h = glm::cross(Direction, edge2);
             a = glm::dot(edge1, h);
             if (a > -EPSILON && a < EPSILON)
-                return false;    // This ray is parallel to this triangle.
+                return -1.0f;    // This ray is parallel to this triangle.
             f = (float)(1.0 / a);
             s = Origin - vertex0;
             u = f * glm::dot(s, h);
             if (u < 0.0 || u > 1.0)
-                return false;
+                return -1.0f;
             q = glm::cross(s, edge1);
             v = f * glm::dot(Direction, q);
             if (v < 0.0 || u + v > 1.0)
-                return false;
+                return -1.0f;
             // At this stage we can compute t to find out where the intersection point is on the line.
             float t = f * glm::dot(edge2, q);
             if (t > EPSILON) // ray intersection
             {
                 //  outIntersectionPoint = rayOrigin + rayVector * t;
-                return true;
+                return t;
             }
             else // This means that there is a line intersection but not a ray intersection.
-                return false;
+                return -1.0f;
         }
 
-        bool IntersectsTriangle(const Triangle& triangle)
+        float IntersectsTriangle(const Triangle& triangle)
         {
             return IntersectsTriangle(triangle.Points[0], triangle.Points[1], triangle.Points[2]);
         }

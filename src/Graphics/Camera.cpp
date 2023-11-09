@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Camera.h"
+#include "Core/Application.h"
 #include "Input/Input.h"
 #include "Input/KeyCodes.h"
 #include <glm/gtc/quaternion.hpp>
@@ -139,8 +140,13 @@ namespace VkLibrary {
 
 		if (Input::IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
 		{
+			Application::GetWindow()->SetMouseCursorMode(false);
 			MouseRotate(delta, m_Specification.lookSpeed);
 			moved = true;
+		}
+		else
+		{
+			Application::GetWindow()->SetMouseCursorMode(true);
 		}
 
 		return moved;

@@ -39,6 +39,9 @@ namespace VkLibrary {
 		m_Position.x += windowOffset.x;
 		m_Position.y += windowOffset.y;
 		
+		m_Hovered = ImGui::IsWindowHovered();
+		m_Focused =  ImGui::IsWindowFocused();
+
 		// Update viewport descriptor on reisze
 		{
 			Ref<VulkanDevice> device = Application::GetApp().GetVulkanDevice();

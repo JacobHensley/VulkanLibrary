@@ -79,7 +79,7 @@ namespace VkLibrary {
         return glfwWindowShouldClose(m_WindowHandle);
     }
 
-    void Window::SetMouseMode(bool enable)
+    void Window::SetMouseCursorMode(bool enable)
     {
         if (enable)
             glfwSetInputMode(m_WindowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);

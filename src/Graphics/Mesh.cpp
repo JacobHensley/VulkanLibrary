@@ -336,14 +336,20 @@ namespace VkLibrary {
 		}
 	}
 
-	bool Mesh::RayIntersection(Ray ray, const glm::mat4& transform)
+	// NOTE: Very inefficient for this task since we need to find the closest tirangle.
+	int Mesh::RayIntersection(Ray ray, const glm::mat4& transform)
 	{
 		float distance;
 		if (!ray.IntersectsAABB(m_BoundingBox, distance))
-			return false;
+			return -1;
+		
+		float distanceOfClosestSubMesh = INT32_MAX;
+		int indexOfClosestSubMesh = -1;
 
-		for (const auto& subMesh : m_SubMeshes)
+		for (int i = 0; i < m_SubMeshes.size(); i++)
 		{
+			const auto& subMesh = m_SubMeshes[i];
+
 			AABB boundingBox = subMesh.BoundingBox;
 			boundingBox.Min = subMesh.WorldTransform * glm::vec4(boundingBox.Min, 1.0f);
 			boundingBox.Max = subMesh.WorldTransform * glm::vec4(boundingBox.Max, 1.0f);
@@ -356,17 +362,30 @@ namespace VkLibrary {
 				localRay.Origin = glm::inverse(subMesh.WorldTransform) * glm::vec4(localRay.Origin, 1.0f);
 				localRay.Direction = glm::inverse(glm::mat3(subMesh.WorldTransform)) * localRay.Direction;
 
-				for (uint32_t i = subMesh.TriangleOffset; i < (subMesh.TriangleOffset + subMesh.TriangleCount); i++)
+				for (uint32_t j = subMesh.TriangleOffset; j < (subMesh.TriangleOffset + subMesh.TriangleCount); j++)
 				{
-					Triangle triangle = m_Triangles[i];
-
-					if (localRay.IntersectsTriangle(triangle))
-						return true;
+					Triangle triangle = m_Triangles[j];
+					
+					float t = localRay.IntersectsTriangle(triangle);
+					
+					if (t > -1.0f)
+					{
+						if (t < distanceOfClosestSubMesh)
+						{
+							distanceOfClosestSubMesh = t;
+							indexOfClosestSubMesh = i;
+						}
+					}
 				}
 			}
 		}
 
-		return false;
+		if (indexOfClosestSubMesh > -1)
+		{
+			return indexOfClosestSubMesh;
+		}
+
+		return -1;
 	}
 
 	void Mesh::CalculateNodeTransforms(const tinygltf::Node& node, const tinygltf::Model& scene, const glm::mat4& parentTransform)

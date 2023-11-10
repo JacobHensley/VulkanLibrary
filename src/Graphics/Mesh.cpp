@@ -263,6 +263,7 @@ namespace VkLibrary {
 				Texture2DSpecification textureSpec;
 				textureSpec.path = m_Path.parent_path() / image.uri;
 				textureSpec.DebugName = (m_Path.filename().string() + ", Albedo Texture");
+				textureSpec.sRGB = true;
 
 				m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
@@ -351,16 +352,16 @@ namespace VkLibrary {
 			const auto& subMesh = m_SubMeshes[i];
 
 			AABB boundingBox = subMesh.BoundingBox;
-			boundingBox.Min = subMesh.WorldTransform * glm::vec4(boundingBox.Min, 1.0f);
-			boundingBox.Max = subMesh.WorldTransform * glm::vec4(boundingBox.Max, 1.0f);
+			boundingBox.Min = transform * subMesh.WorldTransform * glm::vec4(boundingBox.Min, 1.0f);
+			boundingBox.Max = transform * subMesh.WorldTransform * glm::vec4(boundingBox.Max, 1.0f);
 
 			bool intersects = ray.IntersectsAABB(boundingBox, distance);
 
 			if (intersects)
 			{
 				Ray localRay = ray;
-				localRay.Origin = glm::inverse(subMesh.WorldTransform) * glm::vec4(localRay.Origin, 1.0f);
-				localRay.Direction = glm::inverse(glm::mat3(subMesh.WorldTransform)) * localRay.Direction;
+				localRay.Origin = glm::inverse(transform * subMesh.WorldTransform) * glm::vec4(localRay.Origin, 1.0f);
+				localRay.Direction = glm::inverse(glm::mat3(transform * subMesh.WorldTransform)) * localRay.Direction;
 
 				for (uint32_t j = subMesh.TriangleOffset; j < (subMesh.TriangleOffset + subMesh.TriangleCount); j++)
 				{

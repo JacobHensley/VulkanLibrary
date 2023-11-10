@@ -52,8 +52,8 @@ namespace VkLibrary {
 		m_FocalPoint = m_Specification.focalPoint;
 		m_Distance = m_Specification.distance;
 
-		m_Yaw = m_Specification.yaw * (PI / 180.0f);
-		m_Pitch = m_Specification.pitch * (PI / 180.0f);
+		m_Yaw = m_Specification.yaw;
+		m_Pitch = m_Specification.pitch;
 
 		m_Position = CalculatePosition();
 		m_Rotation = glm::eulerAngles(GetOrientation()) * (180.0f / (float)PI);

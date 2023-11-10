@@ -7,6 +7,7 @@ namespace VkLibrary {
 	struct Texture2DSpecification
 	{
 		std::filesystem::path path;
+		bool sRGB = false;
 
 		std::string DebugName = "Texture2D";
 	};

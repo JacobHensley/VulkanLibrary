@@ -21,8 +21,8 @@ namespace VkLibrary {
 		float rotationSpeed = 0.001f;
 		float zoomSpeed = 2.0f;
 		float distance = 5.0f;
-		float pitch = 25.0f;
-		float yaw = 35.0f;
+		float pitch = glm::radians(25.0f);
+		float yaw = glm::radians(35.0f);
 		glm::vec3 focalPoint = glm::vec3(0.0f);
 
 		// POV camera settings
@@ -52,7 +52,13 @@ namespace VkLibrary {
 		const glm::mat4& GetInverseViewProjection() const { return m_InverseViewProjection; }
 
 		const glm::vec3& GetPosition() const { return m_Position; }
+		void SetPosition(const glm::vec3& position) { m_Position = position; }
+
 		const glm::vec3& GetRotation() const { return m_Rotation; }
+
+		const glm::vec2 GetPitchYaw() const { return { m_Pitch, m_Yaw }; }
+		const glm::vec3& GetFocalPoint() const { return m_FocalPoint; }
+		const float GetDistance() const { return m_Distance; }
 
 	private:
 		bool HandleEditorCameraMovement(const glm::vec2& delta);

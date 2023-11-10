@@ -19,6 +19,10 @@ namespace VkLibrary {
 	public:
 		inline VkPipeline GetPipeline() { return m_Pipeline; }
 		inline VkPipelineLayout GetPipelineLayout() { return m_Specification.PipelineLayout; }
+		
+		inline Ref<Shader> GetShader() const { return m_Specification.Shader; }
+
+		inline const ComputePipelineSpecification& GetSpecification() const { return m_Specification; }
 
 	private:
 		void Init();

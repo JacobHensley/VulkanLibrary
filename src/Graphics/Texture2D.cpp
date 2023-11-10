@@ -21,7 +21,7 @@ namespace VkLibrary {
 		imageSpecification.Data = data;
 		imageSpecification.Width = width;
 		imageSpecification.Height = height;
-		imageSpecification.Format = ImageFormat::RGBA8;
+		imageSpecification.Format = specification.sRGB ? ImageFormat::SRGBA8 : ImageFormat::RGBA8;
 		imageSpecification.Usage = ImageUsage::TEXTURE_2D;
 		imageSpecification.DebugName = (m_Specification.DebugName + ", Image").c_str();
 

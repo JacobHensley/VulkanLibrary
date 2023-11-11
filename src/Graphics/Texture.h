@@ -32,4 +32,30 @@ namespace VkLibrary {
 		Texture2DSpecification m_Specification;
 	};
 
+	struct TextureCubeSpecification
+	{
+		std::filesystem::path path;
+		std::string DebugName = "TextureCube";
+	};
+
+	class TextureCube
+	{
+	public:
+		TextureCube(TextureCubeSpecification specification);
+		~TextureCube();
+
+		inline Ref<Image> GetImage() { return m_Image; }
+
+		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorImageInfo(); }
+		inline const TextureCubeSpecification& GetSpecification() const { return m_Specification; }
+
+	private:
+		std::filesystem::path m_Path;
+		Ref<Image> m_Image;
+
+		VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
+
+		TextureCubeSpecification m_Specification;
+	};
+
 }

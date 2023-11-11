@@ -3,7 +3,7 @@
 #include "Math/AABB.h"
 #include "Math/Ray.h"
 #include "VulkanBuffers.h"
-#include "Texture2D.h"
+#include "Texture.h"
 #include "Material.h"
 #include <tinygltf/tiny_gltf.h>
 #include <glm/glm.hpp>

@@ -1,6 +1,6 @@
 #pragma once
 #include "Shader.h"
-#include "Texture2D.h"
+#include "Texture.h"
 #include <glm/glm.hpp>
 
 namespace VkLibrary {

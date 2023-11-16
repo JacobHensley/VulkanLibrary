@@ -21,6 +21,11 @@ namespace VkLibrary {
 		Ref<VulkanDevice> device = Application::GetVulkanDevice();
 
 		m_Size = m_Specification.Width * m_Specification.Height * GetImageFormatSize(m_Specification.Format);
+		if (m_Specification.Size != -1)
+		{
+			m_Size = m_Specification.Size;
+		}
+
 		VkFormat format = ImageFormatToVulkan(m_Specification.Format);
 		bool isDepthFormat = VkTools::IsDepthFormat(format);
 		bool isCube = m_Specification.Usage == ImageUsage::TEXTURE_CUBE || m_Specification.Usage == ImageUsage::STORAGE_IMAGE_CUBE;
@@ -224,6 +229,7 @@ namespace VkLibrary {
 		{
 		case ImageFormat::RGBA8:		    return 4;
 		case ImageFormat::SRGBA8:		    return 4;
+		case ImageFormat::BC7_SRGB:			return 4;
 		case ImageFormat::RGBA32F:			return 16;
 		case ImageFormat::DEPTH24_STENCIL8: return 4;
 		}
@@ -238,6 +244,7 @@ namespace VkLibrary {
 		{
 		case ImageFormat::RGBA8:		    return VK_FORMAT_R8G8B8A8_UNORM;
 		case ImageFormat::SRGBA8:		    return VK_FORMAT_R8G8B8A8_SRGB;
+		case ImageFormat::BC7_SRGB:			return VK_FORMAT_BC7_SRGB_BLOCK;
 		case ImageFormat::RGBA32F:			return VK_FORMAT_R32G32B32A32_SFLOAT;
 		case ImageFormat::DEPTH24_STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
 		}

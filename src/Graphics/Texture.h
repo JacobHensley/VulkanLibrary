@@ -8,11 +8,13 @@ namespace VkLibrary {
 	{
 		std::filesystem::path path;
 		bool sRGB = false;
+		bool compress = false;
 
 		std::string DebugName = "Texture2D";
 	};
 
 	// TODO: Add support for multiple texture formats
+	// TODO: loading HDR images properly causes fire flys
 
 	class Texture2D
 	{
@@ -28,6 +30,7 @@ namespace VkLibrary {
 	private:
 		std::filesystem::path m_Path;
 		Ref<Image> m_Image;
+		uint8_t* m_Buffer;
 
 		Texture2DSpecification m_Specification;
 	};

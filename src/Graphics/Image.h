@@ -11,7 +11,7 @@ namespace VkLibrary {
 
 	enum class ImageFormat
 	{
-		NONE = -1, RGBA8, RGBA32F, DEPTH24_STENCIL8, SRGBA8
+		NONE = -1, RGBA8, SRGBA8, BC7_SRGB, RGBA32F, DEPTH24_STENCIL8
 	};
 
 	struct ImageInfo
@@ -27,6 +27,7 @@ namespace VkLibrary {
 		uint8_t* Data = nullptr;
 		uint32_t Width = 0;
 		uint32_t Height = 0;
+		int Size = -1;
 		uint32_t LayerCount = 1;
 		ImageFormat Format = ImageFormat::NONE;
 		ImageUsage Usage = ImageUsage::NONE;

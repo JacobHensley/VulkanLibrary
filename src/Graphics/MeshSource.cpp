@@ -258,6 +258,7 @@ namespace VkLibrary {
 				textureSpec.path = m_Path.parent_path() / image.uri;
 				textureSpec.DebugName = (m_Path.filename().string() + ", Albedo Texture");
 				textureSpec.sRGB = true;
+				textureSpec.compress = true;
 
 				m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
@@ -275,6 +276,7 @@ namespace VkLibrary {
 				Texture2DSpecification textureSpec;
 				textureSpec.path = m_Path.parent_path() / image.uri;
 				textureSpec.DebugName = (m_Path.filename().string() + ", MetallicRoughness Texture");
+				textureSpec.compress = true;
 
 				m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 
@@ -293,6 +295,7 @@ namespace VkLibrary {
 				Texture2DSpecification textureSpec;
 				textureSpec.path = m_Path.parent_path() / image.uri;
 				textureSpec.DebugName = (m_Path.filename().string() + ", Normal Texture");
+				textureSpec.compress = true;
 
 				m_Textures.emplace_back(CreateRef<Texture2D>(textureSpec));
 

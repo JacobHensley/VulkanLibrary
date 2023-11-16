@@ -3,8 +3,27 @@
 #include "ComputePipeline.h"
 #include "Core/Application.h"
 #include <stb/stb_image.h>
+#include <nvtt/nvtt.h>
+#include <nvtt/nvtt_wrapper.h>
 
 namespace VkLibrary {
+
+	struct MyOutputHandler : public nvtt::OutputHandler
+	{
+		MyOutputHandler(uint8_t* buffer) : m_Buffer(buffer) { }
+		virtual ~MyOutputHandler() { }
+
+		virtual void beginImage(int size, int width, int height, int depth, int face, int miplevel) { }
+		virtual void endImage() { }
+
+		virtual bool writeData(const void* data, int size)
+		{
+			memcpy(m_Buffer, data, size);
+			return true;
+		}
+
+		uint8_t* m_Buffer;
+	};
 
 	Texture2D::Texture2D(Texture2DSpecification specification)
 		: m_Specification(specification)
@@ -15,22 +34,60 @@ namespace VkLibrary {
 		int width, height, bpp;
 		stbi_set_flip_vertically_on_load(false);
 
-		uint8_t* data = stbi_load(m_Specification.path.string().c_str(), &width, &height, &bpp, 4);
-		ASSERT(data, "Failed to load image");
+		if (m_Specification.compress)
+		{
+			nvtt::Surface image;
+			bool load = image.load(m_Specification.path.string().c_str());
+			width = image.width();
+			height = image.height();
 
-		// Create image
-		ImageSpecification imageSpecification = {};
-		imageSpecification.Data = data;
-		imageSpecification.Width = width;
-		imageSpecification.Height = height;
-		imageSpecification.Format = specification.sRGB ? ImageFormat::SRGBA8 : ImageFormat::RGBA8;
-		imageSpecification.Usage = ImageUsage::TEXTURE_2D;
-		imageSpecification.DebugName = (m_Specification.DebugName + ", Image").c_str();
+			LOG_DEBUG(load);
 
-		m_Image = CreateRef<Image>(imageSpecification);
+			nvtt::Context context(true);
 
-		// Free CPU memory
-		stbi_image_free(data);
+			nvtt::CompressionOptions compressionOptions;
+			compressionOptions.setFormat(nvtt::Format_BC7);
+
+			int size = context.estimateSize(image, 1, compressionOptions);
+			m_Buffer = (uint8_t*)malloc(size);
+
+			MyOutputHandler outputHandler(m_Buffer);
+			nvtt::OutputOptions outputOptions;
+			outputOptions.setOutputHandler(&outputHandler);
+
+			context.compress(image, 0, 0, compressionOptions, outputOptions);
+
+			// Create image
+			ImageSpecification imageSpecification = {};
+			imageSpecification.Data = m_Buffer;
+			imageSpecification.Width = width;
+			imageSpecification.Height = height;
+			imageSpecification.Size = size;
+			imageSpecification.Format = ImageFormat::BC7_SRGB;
+			imageSpecification.Usage = ImageUsage::TEXTURE_2D;
+			imageSpecification.DebugName = (m_Specification.DebugName + ", Image").c_str();
+
+			m_Image = CreateRef<Image>(imageSpecification);
+		}
+		else
+		{
+			uint8_t* data = stbi_load(m_Specification.path.string().c_str(), &width, &height, &bpp, 4);
+			ASSERT(data, "Failed to load image");
+
+			// Create image
+			ImageSpecification imageSpecification = {};
+			imageSpecification.Data = data;
+			imageSpecification.Width = width;
+			imageSpecification.Height = height;
+			imageSpecification.Format = specification.sRGB ? ImageFormat::SRGBA8 : ImageFormat::RGBA8;
+			imageSpecification.Usage = ImageUsage::TEXTURE_2D;
+			imageSpecification.DebugName = (m_Specification.DebugName + ", Image").c_str();
+
+			m_Image = CreateRef<Image>(imageSpecification);
+
+			// Free CPU memory
+			stbi_image_free(data);
+		}
 	}
 
 	Texture2D::~Texture2D()

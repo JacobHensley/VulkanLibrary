@@ -53,6 +53,7 @@ project "VulkanLibrary"
 		"%{IncludeDir.imgui}",
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.DXC}",
+		"C:/Program Files/NVIDIA Corporation/NVIDIA Texture Tools/include"
 	}
 
 	links 
@@ -63,6 +64,7 @@ project "VulkanLibrary"
 		"vendor/DXC/lib/dxcompiler.lib",
 		VK_SDK_PATH .. "/Lib/vulkan-1.lib",
 		VK_SDK_PATH .. "/Lib/shaderc_shared.lib",
+		"C:/Program Files/NVIDIA Corporation/NVIDIA Texture Tools/lib/x64-v142/nvtt30204.lib"
 	}
 
 	function VulkanLibraryIncludeDirectories(directory)

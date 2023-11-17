@@ -10,7 +10,7 @@ namespace VkLibrary {
 
 	struct MyOutputHandler : public nvtt::OutputHandler
 	{
-		MyOutputHandler(uint8_t* buffer) : m_Buffer(buffer) { }
+		MyOutputHandler(uint8_t* buffer) : m_Buffer(buffer), m_BufferPtr(buffer) { }
 		virtual ~MyOutputHandler() { }
 
 		virtual void beginImage(int size, int width, int height, int depth, int face, int miplevel) { }
@@ -18,11 +18,16 @@ namespace VkLibrary {
 
 		virtual bool writeData(const void* data, int size)
 		{
-			memcpy(m_Buffer, data, size);
+			// std::cout << size << " bytes written\n";
+			memcpy(m_BufferPtr, data, size);
+			m_BufferPtr += size;
 			return true;
 		}
 
-		uint8_t* m_Buffer;
+		uint64_t GetWrittenSize() const { return (uint64_t)(m_BufferPtr - m_Buffer); }
+
+		uint8_t* m_Buffer = nullptr;
+		uint8_t* m_BufferPtr = nullptr;
 	};
 
 	Texture2D::Texture2D(Texture2DSpecification specification)
@@ -34,40 +39,93 @@ namespace VkLibrary {
 		int width, height, bpp;
 		stbi_set_flip_vertically_on_load(false);
 
+		static uint64_t totalSizeUncompressed, totalSizeCompressed = 0;
+
 		if (m_Specification.compress)
 		{
-			nvtt::Surface image;
-			bool load = image.load(m_Specification.path.string().c_str());
-			width = image.width();
-			height = image.height();
+			std::string inputPathString = m_Specification.path.string();
+			uint8_t* data = stbi_load(inputPathString.c_str(), &width, &height, &bpp, 4);
+			ASSERT(data, "Failed to load image");
 
-			LOG_DEBUG(load);
+			nvtt::Surface image;
+			image.setImage(nvtt::InputFormat_BGRA_8UB, width, height, 1, data);
+			image.swizzle(2, 1, 0, 3);
 
 			nvtt::Context context(true);
 
 			nvtt::CompressionOptions compressionOptions;
 			compressionOptions.setFormat(nvtt::Format_BC7);
+			compressionOptions.setQuality(nvtt::Quality_Normal);
 
-			int size = context.estimateSize(image, 1, compressionOptions);
-			m_Buffer = (uint8_t*)malloc(size);
+			int mipmapCount = nvtt::countMipmaps(width, height, 1);
+			int size = context.estimateSize(image, mipmapCount, compressionOptions);
+#if FILE
+			size += 148; // DDS header size
+#endif
+			m_Buffer = new uint8_t[size];
+
+			nvtt::OutputOptions outputOptions;
+			
+			// Output to file
+#if FILE
+			std::filesystem::path outputPathBinary = m_Specification.path.replace_extension("bc7");
+			std::filesystem::path outputPathNvidia = m_Specification.path.replace_extension("nbc7");
+			std::string outputPathNvidiaStr = outputPathNvidia.string();
+
+			outputOptions.setFileName(outputPathNvidiaStr.c_str());
+
+			if (!context.outputHeader(image, 1, compressionOptions, outputOptions))
+			{
+				__debugbreak();
+			}
+
+			if (!context.compress(image, 0, 0, compressionOptions, outputOptions))
+			{
+				__debugbreak();
+			}
+#endif
+
 
 			MyOutputHandler outputHandler(m_Buffer);
-			nvtt::OutputOptions outputOptions;
 			outputOptions.setOutputHandler(&outputHandler);
 
-			context.compress(image, 0, 0, compressionOptions, outputOptions);
+#if FILE
+			if (!context.outputHeader(image, 1, compressionOptions, outputOptions))
+			{
+				__debugbreak();
+			}
+#endif
+
+			if (!context.compress(image, 0, 0, compressionOptions, outputOptions))
+			{
+				__debugbreak();
+			}
+
+#if FILE
+			std::ofstream outputFileStream(outputPathBinary, std::ios::binary);
+			std::cout << "Total written = " << outputHandler.GetWrittenSize() << " bytes\n";
+			outputFileStream.write((char*)m_Buffer, outputHandler.GetWrittenSize());
+			outputFileStream.close();
+#endif
 
 			// Create image
 			ImageSpecification imageSpecification = {};
 			imageSpecification.Data = m_Buffer;
 			imageSpecification.Width = width;
 			imageSpecification.Height = height;
-			imageSpecification.Size = size;
+			imageSpecification.Size = outputHandler.GetWrittenSize();
 			imageSpecification.Format = ImageFormat::BC7_SRGB;
 			imageSpecification.Usage = ImageUsage::TEXTURE_2D;
 			imageSpecification.DebugName = (m_Specification.DebugName + ", Image").c_str();
 
 			m_Image = CreateRef<Image>(imageSpecification);
+
+			std::cout << "Compressed " << (width * height * 4) << " bytes -> " << size << " bytes\n";
+			totalSizeUncompressed += (width * height * 4);
+			totalSizeCompressed += size;
+			std::cout << "TOTAL " << (totalSizeUncompressed / 1024 / 1024) << " MB -> " << (totalSizeCompressed / 1024 / 1024) << " MB\n";
+
+			delete[] m_Buffer;
 		}
 		else
 		{

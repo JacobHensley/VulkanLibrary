@@ -24,7 +24,6 @@ namespace VkLibrary {
 		Mesh(MeshSource source);
 		~Mesh();
 
-
 		inline std::vector<MaterialBuffer>& GetMaterialBuffers() { return m_MaterialBuffers; };
 		const MeshSource& GetSource() const { return m_MeshSource; }
 

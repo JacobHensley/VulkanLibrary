@@ -21,6 +21,8 @@ namespace VkLibrary {
 		std::string error;
 		std::string warning;
 
+		loader.RemoveImageLoader();
+
 		if (m_Path.extension() == ".gltf")
 		{
 			loader.LoadASCIIFromFile(&m_Model, &error, &warning, m_Path.string());
@@ -51,6 +53,8 @@ namespace VkLibrary {
 
 		m_VertexBuffer = CreateRef<VertexBuffer>(m_Vertices.data(), sizeof(Vertex) * m_Vertices.size());
 		m_IndexBuffer = CreateRef<IndexBuffer>(m_Indices.data(), sizeof(uint32_t) * m_Indices.size(), m_Indices.size());
+
+		m_Model = tinygltf::Model();
 	}
 
 	void MeshSource::LoadVertexData()

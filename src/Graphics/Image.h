@@ -27,6 +27,7 @@ namespace VkLibrary {
 		uint8_t* Data = nullptr;
 		uint32_t Width = 0;
 		uint32_t Height = 0;
+		uint32_t Depth = 1;
 		int Size = -1;
 		uint32_t LayerCount = 1;
 		ImageFormat Format = ImageFormat::NONE;

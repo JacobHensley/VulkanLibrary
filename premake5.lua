@@ -14,6 +14,7 @@ IncludeDir["SPIRVCross"]        = "vendor/SPIRV-Cross"
 IncludeDir["imgui"]             = "vendor/imgui"
 IncludeDir["stb_image"]         = "vendor/stb"
 IncludeDir["DXC"] 				= "vendor/DXC/include"
+IncludeDir["NVTT"] 				= "vendor/NVTT/include"
 
 project "VulkanLibrary"
 	kind "StaticLib"
@@ -53,7 +54,7 @@ project "VulkanLibrary"
 		"%{IncludeDir.imgui}",
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.DXC}",
-		"C:/Program Files/NVIDIA Corporation/NVIDIA Texture Tools/include"
+		"%{IncludeDir.NVTT}",
 	}
 
 	links 
@@ -62,9 +63,14 @@ project "VulkanLibrary"
 		"SPIRV-Cross",
 		"imgui",
 		"vendor/DXC/lib/dxcompiler.lib",
+		"vendor/NVTT/lib/x64-v142/nvtt30204.lib",
 		VK_SDK_PATH .. "/Lib/vulkan-1.lib",
 		VK_SDK_PATH .. "/Lib/shaderc_shared.lib",
-		"C:/Program Files/NVIDIA Corporation/NVIDIA Texture Tools/lib/x64-v142/nvtt30204.lib"
+	}
+
+	postbuildcommands
+	{
+		("{COPY} vendor/NVTT/lib/x64-v142/nvtt30204.dll \"../" .. target .. "/\""),
 	}
 
 	function VulkanLibraryIncludeDirectories(directory)
@@ -80,6 +86,7 @@ project "VulkanLibrary"
 			path.join(directory, "%{IncludeDir.imgui}"),
 			path.join(directory, "%{IncludeDir.stb_image}"),
 			path.join(directory, "%{IncludeDir.DXC}"),
+			path.join(directory, "%{IncludeDir.NVTT}"),
 		}
 	end
 

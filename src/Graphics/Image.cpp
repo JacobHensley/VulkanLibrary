@@ -20,7 +20,7 @@ namespace VkLibrary {
 	{
 		Ref<VulkanDevice> device = Application::GetVulkanDevice();
 
-		m_Size = m_Specification.Width * m_Specification.Height * GetImageFormatSize(m_Specification.Format);
+		m_Size = m_Specification.Width * m_Specification.Height * m_Specification.Depth * GetImageFormatSize(m_Specification.Format);
 		if (m_Specification.Size != -1)
 		{
 			m_Size = m_Specification.Size;
@@ -34,7 +34,7 @@ namespace VkLibrary {
 
 		VkImageCreateInfo imageCreateInfo = {};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.imageType = m_Specification.Depth > 1 ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D;
 		imageCreateInfo.format = format;
 		imageCreateInfo.mipLevels = 1;
 		imageCreateInfo.arrayLayers = layerCount;
@@ -42,7 +42,7 @@ namespace VkLibrary {
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageCreateInfo.extent = { m_Width, m_Height, 1 };
+		imageCreateInfo.extent = { m_Width, m_Height, m_Specification.Depth };
 		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 
 		if (m_Specification.Usage == ImageUsage::FRAMEBUFFER_ATTACHMENT)
@@ -102,7 +102,7 @@ namespace VkLibrary {
 			copyRegion.imageSubresource.mipLevel = 0;
 			copyRegion.imageSubresource.baseArrayLayer = 0;
 			copyRegion.imageSubresource.layerCount = layerCount;
-			copyRegion.imageExtent = { m_Width, m_Height, 1 };
+			copyRegion.imageExtent = { m_Width, m_Height, m_Specification.Depth };
 
 			// Copy staging buffer to image on the GPU
 			vkCmdCopyBufferToImage(commandBuffer, stagingBuffer.GetBuffer(), m_ImageInfo.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
@@ -157,7 +157,7 @@ namespace VkLibrary {
 		// Create image view
 		VkImageViewCreateInfo imageViewCreateInfo = {};
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCreateInfo.viewType = isCube ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCreateInfo.viewType = isCube ? VK_IMAGE_VIEW_TYPE_CUBE : (m_Specification.Depth > 1 ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
 		imageViewCreateInfo.format = format;
 		imageViewCreateInfo.flags = 0;
 		imageViewCreateInfo.subresourceRange = {};

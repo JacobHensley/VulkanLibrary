@@ -135,6 +135,7 @@ namespace VkLibrary {
 			case ShaderDescriptorType::UNIFORM_BUFFER:         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			case ShaderDescriptorType::STORAGE_BUFFER:         return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			case ShaderDescriptorType::ACCELERATION_STRUCTURE: return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+			case ShaderDescriptorType::BOOL:				   return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			}
 
 			ASSERT(false, "Unknown Type");

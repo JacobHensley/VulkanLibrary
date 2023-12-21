@@ -59,7 +59,7 @@ namespace VkLibrary {
 
 		const uint32_t MaxStorageBufferDescriptorCount = 2048;
 
-		std::array<VkDescriptorSetLayoutBinding, 11> layoutBindings = {
+		std::array<VkDescriptorSetLayoutBinding, 12> layoutBindings = {
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0),
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 1),
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 2),
@@ -71,6 +71,7 @@ namespace VkLibrary {
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 8),
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 9, MaxStorageBufferDescriptorCount),
 			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 10),
+			VkTools::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 11),
 		};
 
 		std::array<VkDescriptorBindingFlags, layoutBindings.size()> bindingFlags =
@@ -86,6 +87,7 @@ namespace VkLibrary {
 			0,											// Binding 8:  Material Buffer
 			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,	// Binding 9:  Textures
 			0,											// Binding 10: Skybox
+			0,											// Binding 11: Noise Texture
 		};
 
 		VkDescriptorSetLayoutBindingFlagsCreateInfo descriptorSetLayoutBindingsCreateInfo{};

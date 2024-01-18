@@ -54,8 +54,7 @@ namespace VkLibrary {
 	{
 	public:
 		MeshSource(const std::string_view path);
-		~MeshSource();
-
+		~MeshSource() = default;
 	public:
 		inline const std::vector<SubMesh>& GetSubMeshes() const { return m_SubMeshes; }
 		

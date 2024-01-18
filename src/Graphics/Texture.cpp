@@ -35,6 +35,8 @@ namespace VkLibrary {
 	{
 		m_Path = m_Specification.path;
 
+		LOG_INFO("Loading Texture2D {}", m_Path.string());
+
 		// Load image from disk
 		int width, height, bpp;
 		stbi_set_flip_vertically_on_load(false);
@@ -43,87 +45,124 @@ namespace VkLibrary {
 
 		if (m_Specification.compress)
 		{
-			std::string inputPathString = m_Specification.path.string();
-			uint8_t* data = stbi_load(inputPathString.c_str(), &width, &height, &bpp, 4);
-			ASSERT(data, "Failed to load image");
+			std::filesystem::path compressedPath = m_Specification.path.string() + ".bc7";
 
-			nvtt::Surface image;
-			image.setImage(nvtt::InputFormat_BGRA_8UB, width, height, 1, data);
-			image.swizzle(2, 1, 0, 3);
+			uint64_t imageSize = 0;
 
-			nvtt::Context context(true);
-
-			nvtt::CompressionOptions compressionOptions;
-			compressionOptions.setFormat(nvtt::Format_BC7);
-			compressionOptions.setQuality(nvtt::Quality_Normal);
-
-			int mipmapCount = nvtt::countMipmaps(width, height, 1);
-			int size = context.estimateSize(image, mipmapCount, compressionOptions);
-#if FILE
-			size += 148; // DDS header size
-#endif
-			m_Buffer = new uint8_t[size];
-
-			nvtt::OutputOptions outputOptions;
-			
-			// Output to file
-#if FILE
-			std::filesystem::path outputPathBinary = m_Specification.path.replace_extension("bc7");
-			std::filesystem::path outputPathNvidia = m_Specification.path.replace_extension("nbc7");
-			std::string outputPathNvidiaStr = outputPathNvidia.string();
-
-			outputOptions.setFileName(outputPathNvidiaStr.c_str());
-
-			if (!context.outputHeader(image, 1, compressionOptions, outputOptions))
+			// Read cached texture if available
+			if (std::filesystem::exists(compressedPath))
 			{
-				__debugbreak();
-			}
+				LOG_INFO("Cached texture available");
+				const uint64_t headerSize = sizeof(int) * 2;
 
-			if (!context.compress(image, 0, 0, compressionOptions, outputOptions))
-			{
-				__debugbreak();
+				std::ifstream stream(compressedPath, std::ios::binary | std::ios::ate);
+				imageSize = (uint64_t)stream.tellg() - headerSize;
+				stream.seekg(std::ios::beg);
+				m_Buffer = new uint8_t[imageSize];
+				stream.read((char*)&width, sizeof(int));
+				stream.read((char*)&height, sizeof(int));
+				stream.read((char*)m_Buffer, imageSize);
+				stream.close();
+
+				LOG_INFO("Read cached texture {}", compressedPath.string());
 			}
+			else
+			{
+				LOG_WARN("Cached texture unavailable");
+				std::string inputPathString = m_Specification.path.string();
+				uint8_t* data = stbi_load(inputPathString.c_str(), &width, &height, &bpp, 4);
+				ASSERT(data, "Failed to load image");
+
+				nvtt::Surface image;
+				image.setImage(nvtt::InputFormat_BGRA_8UB, width, height, 1, data);
+				image.swizzle(2, 1, 0, 3);
+
+				nvtt::Context context(true);
+
+				nvtt::CompressionOptions compressionOptions;
+				compressionOptions.setFormat(nvtt::Format_BC7);
+				compressionOptions.setQuality(nvtt::Quality_Normal);
+
+				int mipmapCount = nvtt::countMipmaps(width, height, 1);
+				int estimatedSize = context.estimateSize(image, mipmapCount, compressionOptions);
+#if FILE
+				estimatedSize += 148; // DDS header size
+#endif
+				m_Buffer = new uint8_t[estimatedSize];
+
+				nvtt::OutputOptions outputOptions;
+
+				// Output to file
+#if FILE
+				std::filesystem::path outputPathBinary = m_Specification.path.replace_extension("bc7");
+				std::filesystem::path outputPathNvidia = m_Specification.path.replace_extension("nbc7");
+				std::string outputPathNvidiaStr = outputPathNvidia.string();
+
+				outputOptions.setFileName(outputPathNvidiaStr.c_str());
+
+				if (!context.outputHeader(image, 1, compressionOptions, outputOptions))
+				{
+					__debugbreak();
+				}
+
+				if (!context.compress(image, 0, 0, compressionOptions, outputOptions))
+				{
+					__debugbreak();
+				}
 #endif
 
-
-			MyOutputHandler outputHandler(m_Buffer);
-			outputOptions.setOutputHandler(&outputHandler);
+				MyOutputHandler outputHandler(m_Buffer);
+				outputOptions.setOutputHandler(&outputHandler);
 
 #if FILE
-			if (!context.outputHeader(image, 1, compressionOptions, outputOptions))
-			{
-				__debugbreak();
-			}
+				if (!context.outputHeader(image, 1, compressionOptions, outputOptions))
+				{
+					__debugbreak();
+				}
 #endif
 
-			if (!context.compress(image, 0, 0, compressionOptions, outputOptions))
-			{
-				__debugbreak();
-			}
+				if (!context.compress(image, 0, 0, compressionOptions, outputOptions))
+				{
+					__debugbreak();
+				}
+
+				imageSize = outputHandler.GetWrittenSize();
+
+				// Cache compressed texture
+				std::ofstream stream(compressedPath, std::ios::binary);
+				stream.write((const char*)&width, sizeof(int));
+				stream.write((const char*)&height, sizeof(int));
+				stream.write((const char*)m_Buffer, imageSize);
+				stream.close();
+
+				LOG_INFO("Cached compressed texture {}", compressedPath.string());
 
 #if FILE
-			std::ofstream outputFileStream(outputPathBinary, std::ios::binary);
-			std::cout << "Total written = " << outputHandler.GetWrittenSize() << " bytes\n";
-			outputFileStream.write((char*)m_Buffer, outputHandler.GetWrittenSize());
-			outputFileStream.close();
+				std::ofstream outputFileStream(outputPathBinary, std::ios::binary);
+				std::cout << "Total written = " << outputHandler.GetWrittenSize() << " bytes\n";
+				outputFileStream.write((char*)m_Buffer, outputHandler.GetWrittenSize());
+				outputFileStream.close();
 #endif
+
+				std::cout << "Compressed " << (width * height * 4) << " bytes -> " << imageSize << " bytes\n";
+				totalSizeUncompressed += (width * height * 4);
+				totalSizeCompressed += imageSize;
+				std::cout << "TOTAL " << (totalSizeUncompressed / 1024 / 1024) << " MB -> " << (totalSizeCompressed / 1024 / 1024) << " MB\n";
+
+				stbi_image_free(data);
+			}
 
 			// Create image
 			ImageSpecification imageSpecification = {};
 			imageSpecification.Data = m_Buffer;
 			imageSpecification.Width = width;
 			imageSpecification.Height = height;
-			imageSpecification.Size = outputHandler.GetWrittenSize();
+			imageSpecification.Size = imageSize;
 			imageSpecification.Format = ImageFormat::BC7_SRGB;
 			imageSpecification.Usage = ImageUsage::TEXTURE_2D;
 			imageSpecification.DebugName = (m_Specification.DebugName + ", Image").c_str();
 
 			m_Image = CreateRef<Image>(imageSpecification);
-
-			std::cout << "Compressed " << (width * height * 4) << " bytes -> " << size << " bytes\n";
-			totalSizeUncompressed += (width * height * 4);
-			totalSizeCompressed += size;
-			std::cout << "TOTAL " << (totalSizeUncompressed / 1024 / 1024) << " MB -> " << (totalSizeCompressed / 1024 / 1024) << " MB\n";
 
 			delete[] m_Buffer;
 		}

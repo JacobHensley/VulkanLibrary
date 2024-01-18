@@ -2,6 +2,7 @@
 #include "MeshSource.h"
 #include "Core/Core.h"
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace VkLibrary {
 	
@@ -9,10 +10,6 @@ namespace VkLibrary {
 		: m_Path(path)
 	{
 		Init();
-	}
-
-	MeshSource::~MeshSource()
-	{
 	}
 
 	void MeshSource::Init()
@@ -23,6 +20,7 @@ namespace VkLibrary {
 
 		loader.RemoveImageLoader();
 
+		LOG_INFO("Loading gltf...");
 		if (m_Path.extension() == ".gltf")
 		{
 			loader.LoadASCIIFromFile(&m_Model, &error, &warning, m_Path.string());
@@ -41,9 +39,10 @@ namespace VkLibrary {
 
 		m_DefaultShader = CreateRef<Shader>("assets/shaders/PBR.glsl");
 
+		LOG_INFO("Loading vertex data...");
 		LoadVertexData();
-		LoadMaterialData();
 
+		LOG_INFO("Calculating node transforms...");
 		const tinygltf::Scene& scene = m_Model.scenes[0];
 		for (size_t i = 0; i < scene.nodes.size(); i++)
 		{
@@ -54,7 +53,10 @@ namespace VkLibrary {
 		m_VertexBuffer = CreateRef<VertexBuffer>(m_Vertices.data(), sizeof(Vertex) * m_Vertices.size());
 		m_IndexBuffer = CreateRef<IndexBuffer>(m_Indices.data(), sizeof(uint32_t) * m_Indices.size(), m_Indices.size());
 
+		LOG_INFO("Loading material data...");
+		LoadMaterialData();
 		m_Model = tinygltf::Model();
+		LOG_INFO("Done!");
 	}
 
 	void MeshSource::LoadVertexData()
@@ -400,34 +402,54 @@ namespace VkLibrary {
 
 	void MeshSource::CalculateNodeTransforms(const tinygltf::Node& node, const tinygltf::Model& scene, const glm::mat4& parentTransform)
 	{
-		glm::mat4 transform = glm::mat4(1.0f);
+		//glm::mat4 transform = glm::mat4(1.0f);
+		glm::vec3 translation(0.0f), scale(1.0f);
+		glm::quat rotation;
 
 		if (node.translation.size() == 3) 
 		{
-			transform = glm::translate(transform, glm::vec3(glm::make_vec3(node.translation.data())));
+			//transform = glm::translate(transform, glm::vec3(glm::make_vec3(node.translation.data())));
+			translation = glm::vec3(glm::make_vec3(node.translation.data()));
 		}
 		if (node.rotation.size() == 4) 
 		{
-			glm::quat q = glm::make_quat(node.rotation.data());
-			transform *= glm::mat4(q);
+			const double* f = node.rotation.data();
+			//glm::quat q = glm::make_quat(node.rotation.data());
+			glm::quat q((float)f[3], (float)f[0], (float)f[1], (float)f[2]);
+			rotation = q;
+			//transform *= glm::toMat4(q);
 		}
 		if (node.scale.size() == 3) 
 		{
-			transform = glm::scale(transform, glm::vec3(glm::make_vec3(node.scale.data())));
+			//transform = glm::scale(transform, glm::vec3(glm::make_vec3(node.scale.data())));
+			scale = glm::vec3(glm::make_vec3(node.scale.data()));
 		}
 		if (node.matrix.size() == 16) 
 		{
-			transform = glm::make_mat4x4(node.matrix.data());
+			//transform = glm::make_mat4x4(node.matrix.data());
 		};
 
-		m_SubMeshes[node.mesh].WorldTransform = parentTransform * transform;
-		m_SubMeshes[node.mesh].LocalTransform = transform;
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), translation)
+			* glm::toMat4(rotation)
+			* glm::scale(glm::mat4(1.0f), scale);
+
+		LOG_TRACE("NODE: {}", node.name);
+		LOG_TRACE("  Translation: {}, {}, {}", translation.x, translation.y, translation.z);
+		LOG_TRACE("  Rotation: W={}, X={}, Y={}, Z={}", rotation.w, rotation.x, rotation.y, rotation.z);
+		LOG_TRACE("  Scale: {}, {}, {}", scale.x, scale.y, scale.z);
+
+		if (node.mesh != -1)
+		{
+			m_SubMeshes[node.mesh].WorldTransform = parentTransform * transform;
+			m_SubMeshes[node.mesh].LocalTransform = transform;
+		}
 
 		if (node.children.size() > 0) 
 		{
 			for (size_t i = 0; i < node.children.size(); i++)
 			{
-				CalculateNodeTransforms(scene.nodes[node.children[i]], scene, m_SubMeshes[node.mesh].WorldTransform);
+				glm::mat4 tform = node.mesh != -1 ? m_SubMeshes[node.mesh].WorldTransform : glm::mat4(1.0f);
+				CalculateNodeTransforms(scene.nodes[node.children[i]], scene, tform);
 			}
 		}
 	}

@@ -30,7 +30,7 @@ namespace VkLibrary {
 	private:
 		std::filesystem::path m_Path;
 		Ref<Image> m_Image;
-		uint8_t* m_Buffer;
+		uint8_t* m_Buffer = nullptr;
 
 		Texture2DSpecification m_Specification;
 	};

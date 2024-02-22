@@ -69,9 +69,9 @@ namespace VkLibrary {
 
 		m_BoundingBox = AABB({ UINT64_MAX,UINT64_MAX,UINT64_MAX }, { -(float)UINT64_MAX,-(float)UINT64_MAX,-(float)UINT64_MAX });
 
-		for (int i = 0; i < m_Model.meshes.size(); i++)
+		for (int m = 0; m < m_Model.meshes.size(); m++)
 		{
-			tinygltf::Mesh mesh = m_Model.meshes[i];
+			tinygltf::Mesh mesh = m_Model.meshes[m];
 
 			for (int i = 0; i < mesh.primitives.size(); i++)
 			{
@@ -228,11 +228,22 @@ namespace VkLibrary {
 				subMesh.TriangleCount = subMeshTriangleCount;
 				subMesh.TriangleOffset = subMeshTriangleOffset;
 				subMesh.MaterialIndex = primitive.material;
+				subMesh.GLTFMeshIndex = m;
 				subMesh.BoundingBox = subMeshBoundingBox;
+
+				m_MeshToSubmeshMap[m].push_back((uint32_t)(m_SubMeshes.size() - 1));
 
 				subMeshIndexOffset += subMeshIndexCount;
 				subMeshVertexOffset += subMeshVertexCount;
 				subMeshTriangleOffset += subMeshTriangleCount;
+			}
+		}
+
+		for (auto [meshIndex, submeshes] : m_MeshToSubmeshMap)
+		{
+			if (submeshes.size() > 1)
+			{
+				LOG_WARN("Mesh index {} has {} submeshes!", meshIndex, submeshes.size());
 			}
 		}
 	}
@@ -404,7 +415,7 @@ namespace VkLibrary {
 	{
 		//glm::mat4 transform = glm::mat4(1.0f);
 		glm::vec3 translation(0.0f), scale(1.0f);
-		glm::quat rotation;
+		glm::quat rotation{ 1.0f, 0.0f, 0.0f, 0.0f };
 
 		if (node.translation.size() == 3) 
 		{
@@ -414,10 +425,7 @@ namespace VkLibrary {
 		if (node.rotation.size() == 4) 
 		{
 			const double* f = node.rotation.data();
-			//glm::quat q = glm::make_quat(node.rotation.data());
-			glm::quat q((float)f[3], (float)f[0], (float)f[1], (float)f[2]);
-			rotation = q;
-			//transform *= glm::toMat4(q);
+			rotation = glm::quat((float)f[3], (float)f[0], (float)f[1], (float)f[2]);
 		}
 		if (node.scale.size() == 3) 
 		{
@@ -427,6 +435,7 @@ namespace VkLibrary {
 		if (node.matrix.size() == 16) 
 		{
 			//transform = glm::make_mat4x4(node.matrix.data());
+			__debugbreak();
 		};
 
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), translation)
@@ -440,16 +449,35 @@ namespace VkLibrary {
 
 		if (node.mesh != -1)
 		{
-			m_SubMeshes[node.mesh].WorldTransform = parentTransform * transform;
-			m_SubMeshes[node.mesh].LocalTransform = transform;
+			const auto& submeshIndices = m_MeshToSubmeshMap[node.mesh];
+
+			for (uint32_t submeshIndex : submeshIndices)
+			{
+				m_SubMeshes[submeshIndex].WorldTransform = parentTransform * transform;
+				m_SubMeshes[submeshIndex].LocalTransform = transform;
+				m_SubMeshes[submeshIndex].Name = node.name;
+			}
+		}
+		else
+		{
+			LOG_WARN("Node {} has no mesh", node.name);
+			LOG_WARN("  Translation: {}, {}, {}", translation.x, translation.y, translation.z);
+			LOG_WARN("  Rotation: {}, {}, {}, {}", rotation.w, rotation.x, rotation.y, rotation.z);
+			LOG_WARN("  Scale: {}, {}, {}", scale.x, scale.y, scale.z);
+			LOG_WARN("=========================");
 		}
 
 		if (node.children.size() > 0) 
 		{
 			for (size_t i = 0; i < node.children.size(); i++)
 			{
-				glm::mat4 tform = node.mesh != -1 ? m_SubMeshes[node.mesh].WorldTransform : glm::mat4(1.0f);
-				CalculateNodeTransforms(scene.nodes[node.children[i]], scene, tform);
+				const auto& submeshIndices = m_MeshToSubmeshMap[node.mesh];
+				for (uint32_t submeshIndex : submeshIndices)
+				{
+					glm::mat4 tform = node.mesh != -1 ? m_SubMeshes[submeshIndex].WorldTransform : transform;
+					CalculateNodeTransforms(scene.nodes[node.children[i]], scene, tform);
+				}
+
 			}
 		}
 	}

@@ -13,6 +13,23 @@ namespace VkLibrary {
 
 	AccelerationStructure::~AccelerationStructure()
 	{
+		VkDevice device = Application::GetVulkanDevice()->GetLogicalDevice();
+		VulkanAllocator allocator("AccelerationStructure");
+
+		for (auto blAS : m_BottomLevelAccelerationStructure)
+		{
+			allocator.DestroyBuffer(blAS.ASBuffer, blAS.ASMemory);
+			allocator.DestroyBuffer(blAS.ScratchBuffer, blAS.ScratchMemory);
+			allocator.DestroyBuffer(blAS.InstancesBuffer, blAS.InstancesMemory);
+			allocator.DestroyBuffer(blAS.InstancesUploadBuffer, blAS.InstancesUploadMemory);
+			vkDestroyAccelerationStructureKHR(device, blAS.AccelerationStructure, nullptr);
+		}
+		
+		allocator.DestroyBuffer(m_TopLevelAccelerationStructure.ASBuffer, m_TopLevelAccelerationStructure.ASMemory);
+		allocator.DestroyBuffer(m_TopLevelAccelerationStructure.ScratchBuffer, m_TopLevelAccelerationStructure.ScratchMemory);
+		allocator.DestroyBuffer(m_TopLevelAccelerationStructure.InstancesBuffer, m_TopLevelAccelerationStructure.InstancesMemory);
+		allocator.DestroyBuffer(m_TopLevelAccelerationStructure.InstancesUploadBuffer, m_TopLevelAccelerationStructure.InstancesUploadMemory);
+		vkDestroyAccelerationStructureKHR(device, m_TopLevelAccelerationStructure.AccelerationStructure, nullptr);
 	}
 
 	void AccelerationStructure::Init()

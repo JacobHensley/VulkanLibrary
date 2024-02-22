@@ -28,9 +28,12 @@ namespace VkLibrary {
 		uint32_t TriangleOffset = 0;
 		uint32_t TriangleCount = 0;
 		uint32_t MaterialIndex = 0;
+		int GLTFMeshIndex = -1;
 		AABB BoundingBox = AABB();
 		glm::mat4 LocalTransform = glm::mat4(1.0f);
 		glm::mat4 WorldTransform = glm::mat4(1.0f);
+
+		std::string Name = "<No Name>";
 	};
 
 	struct MaterialData
@@ -57,6 +60,7 @@ namespace VkLibrary {
 		~MeshSource() = default;
 	public:
 		inline const std::vector<SubMesh>& GetSubMeshes() const { return m_SubMeshes; }
+		inline std::vector<SubMesh>& GetSubMeshes() { return m_SubMeshes; }
 		
 		inline const std::vector<Triangle>& GetTriangles() const { return m_Triangles; };
 		inline std::vector<MaterialData>& GetMaterialData() { return m_MaterialBuffers; };
@@ -89,6 +93,8 @@ namespace VkLibrary {
 
 		std::vector<MaterialData> m_MaterialBuffers;
 		std::vector<Ref<Texture2D>> m_Textures;
+
+		std::map<uint32_t, std::vector<uint32_t>> m_MeshToSubmeshMap;
 
 		Ref<Shader> m_DefaultShader;
 

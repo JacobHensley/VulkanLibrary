@@ -29,6 +29,7 @@ namespace VkLibrary {
 
 	public:
 		inline const std::vector<SubMesh>& GetSubMeshes() const { return m_MeshSource->GetSubMeshes(); }
+		inline std::vector<SubMesh>& GetSubMeshes() { return m_MeshSource->GetSubMeshes(); }
 
 		inline const std::vector<Triangle>& GetTriangles() const { return m_MeshSource->GetTriangles(); };
 		inline std::vector<MaterialData>& GetMaterialData() { return m_MeshSource->GetMaterialData(); };

@@ -24,25 +24,31 @@ namespace VkLibrary {
 		if (s_DefaultCubeMap == nullptr)
 		{
 			ImageSpecification spec = {};
-			spec.Data = new uint8_t[sizeof(uint32_t)];
 			spec.Width = 1;
 			spec.Height = 1;
 			spec.Format = ImageFormat::RGBA8;
 			spec.Usage = ImageUsage::STORAGE_IMAGE_CUBE;
 			spec.DebugName = "Default Cubemap Texture";
-			s_DefaultCubeMap = new Image(spec);
+
+			uint32_t pixel = 0;
+			Buffer buffer(&pixel, sizeof(uint32_t));
+
+			s_DefaultCubeMap = new Image(spec, buffer);
 		}
 		
 		if (s_DefaultTexture == nullptr)
 		{
 			ImageSpecification spec = {};
-			spec.Data = new uint8_t[sizeof(uint32_t)];
 			spec.Width = 1;
 			spec.Height = 1;
 			spec.Format = ImageFormat::RGBA8;
 			spec.Usage = ImageUsage::STORAGE_IMAGE_2D;
 			spec.DebugName = "Default 2D Texture";
-			s_DefaultTexture = new Image(spec);
+
+			uint32_t pixel = 0xFFFFFFFF;
+			Buffer buffer(&pixel, sizeof(uint32_t));
+
+			s_DefaultTexture = new Image(spec, buffer);
 		}
 
 

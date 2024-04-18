@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Core.h"
+#include "Memory/Buffer.h"
 #include "Image.h"
 
 namespace VkLibrary {
@@ -20,17 +21,17 @@ namespace VkLibrary {
 	{
 	public:
 		Texture2D(Texture2DSpecification specification);
+		Texture2D(Ref<Image> image);
 		~Texture2D();
 
 		inline Ref<Image> GetImage() { return m_Image; }
-
+		
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorImageInfo(); }
 		inline const Texture2DSpecification& GetSpecification() const { return m_Specification; }
 
 	private:
 		std::filesystem::path m_Path;
 		Ref<Image> m_Image;
-		uint8_t* m_Buffer = nullptr;
 
 		Texture2DSpecification m_Specification;
 	};

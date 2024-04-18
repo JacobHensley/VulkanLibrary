@@ -33,7 +33,6 @@ namespace VkLibrary {
 
 			// Create image to fit attachment
 			ImageSpecification imageSpecification = {};
-			imageSpecification.Data = nullptr;
 			imageSpecification.Width = m_Width;
 			imageSpecification.Height = m_Height;
 			imageSpecification.Format = m_Specification.AttachmentFormats[i];

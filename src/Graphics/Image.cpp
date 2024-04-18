@@ -5,8 +5,8 @@
 
 namespace VkLibrary {
 
-	Image::Image(ImageSpecification specification)
-		:	m_Specification(specification)
+	Image::Image(ImageSpecification specification, Buffer buffer)
+		:	m_Specification(specification), m_Buffer(buffer)
 	{
 		Resize(m_Specification.Width, m_Specification.Height);
 	}
@@ -20,11 +20,7 @@ namespace VkLibrary {
 	{
 		Ref<VulkanDevice> device = Application::GetVulkanDevice();
 
-		m_Size = m_Specification.Width * m_Specification.Height * m_Specification.Depth * GetImageFormatSize(m_Specification.Format);
-		if (m_Specification.Size != -1)
-		{
-			m_Size = m_Specification.Size;
-		}
+		uint64_t expectedSize = m_Specification.Width * m_Specification.Height * m_Specification.Depth * GetImageFormatSize(m_Specification.Format);
 
 		VkFormat format = ImageFormatToVulkan(m_Specification.Format);
 		bool isDepthFormat = VkTools::IsDepthFormat(format);
@@ -68,11 +64,17 @@ namespace VkLibrary {
 		m_ImageInfo.MemoryAllocation = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY, m_ImageInfo.Image);
 		VkTools::SetImageName(m_ImageInfo.Image, m_Specification.DebugName.c_str());
 
+		VkMemoryRequirements requirements;
+		vkGetImageMemoryRequirements(device->GetLogicalDevice(), m_ImageInfo.Image, &requirements);
+
+		LOG_DEBUG("Expected Size = {0}, Vulkan Size = {1}", expectedSize, requirements.size);
+		LOG_DEBUG("Alignment = {0}", requirements.alignment);
+
 		m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		if ((m_Specification.Usage == ImageUsage::TEXTURE_2D || m_Specification.Usage == ImageUsage::TEXTURE_CUBE) && m_Specification.Data)
+		if ((m_Specification.Usage == ImageUsage::TEXTURE_2D || m_Specification.Usage == ImageUsage::TEXTURE_CUBE) && m_Buffer)
 		{
-			StagingBuffer stagingBuffer(m_Specification.Data, m_Size, m_Specification.DebugName + ", Staging Buffer");
+			StagingBuffer stagingBuffer(m_Buffer.Data, m_Buffer.Size, m_Specification.DebugName + ", Staging Buffer");
 			VkCommandBuffer commandBuffer = device->CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
 			VkImageSubresourceRange range;

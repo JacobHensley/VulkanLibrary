@@ -43,6 +43,8 @@ namespace VkLibrary {
 
 		static uint64_t totalSizeUncompressed, totalSizeCompressed = 0;
 
+		Buffer buffer;
+
 		if (m_Specification.compress)
 		{
 			std::filesystem::path compressedPath = m_Specification.path.string() + ".bc7";
@@ -58,10 +60,10 @@ namespace VkLibrary {
 				std::ifstream stream(compressedPath, std::ios::binary | std::ios::ate);
 				imageSize = (uint64_t)stream.tellg() - headerSize;
 				stream.seekg(std::ios::beg);
-				m_Buffer = new uint8_t[imageSize];
+				buffer.Allocate(imageSize);
 				stream.read((char*)&width, sizeof(int));
 				stream.read((char*)&height, sizeof(int));
-				stream.read((char*)m_Buffer, imageSize);
+				stream.read((char*)buffer.Data, imageSize);
 				stream.close();
 
 				LOG_INFO("Read cached texture {}", compressedPath.string());
@@ -88,7 +90,7 @@ namespace VkLibrary {
 #if FILE
 				estimatedSize += 148; // DDS header size
 #endif
-				m_Buffer = new uint8_t[estimatedSize];
+				buffer.Allocate(estimatedSize);
 
 				nvtt::OutputOptions outputOptions;
 
@@ -111,7 +113,7 @@ namespace VkLibrary {
 				}
 #endif
 
-				MyOutputHandler outputHandler(m_Buffer);
+				MyOutputHandler outputHandler((uint8_t*)buffer.Data);
 				outputOptions.setOutputHandler(&outputHandler);
 
 #if FILE
@@ -132,7 +134,7 @@ namespace VkLibrary {
 				std::ofstream stream(compressedPath, std::ios::binary);
 				stream.write((const char*)&width, sizeof(int));
 				stream.write((const char*)&height, sizeof(int));
-				stream.write((const char*)m_Buffer, imageSize);
+				stream.write((const char*)buffer.Data, imageSize);
 				stream.close();
 
 				LOG_INFO("Cached compressed texture {}", compressedPath.string());
@@ -154,37 +156,46 @@ namespace VkLibrary {
 
 			// Create image
 			ImageSpecification imageSpecification = {};
-			imageSpecification.Data = m_Buffer;
 			imageSpecification.Width = width;
 			imageSpecification.Height = height;
-			imageSpecification.Size = imageSize;
 			imageSpecification.Format = ImageFormat::BC7_SRGB;
 			imageSpecification.Usage = ImageUsage::TEXTURE_2D;
 			imageSpecification.DebugName = (m_Specification.DebugName + ", Image").c_str();
 
-			m_Image = CreateRef<Image>(imageSpecification);
+			m_Image = CreateRef<Image>(imageSpecification, buffer);
 
-			delete[] m_Buffer;
+			buffer.Release();
 		}
 		else
 		{
-			uint8_t* data = stbi_load(m_Specification.path.string().c_str(), &width, &height, &bpp, 4);
+			std::string str = m_Specification.path.string();
+			uint8_t* data = stbi_load(str.c_str(), &width, &height, &bpp, 4);
+
+			if (!std::filesystem::exists(m_Specification.path))
+			{
+				LOG_CRITICAL("{0} Does not exist", m_Specification.path);
+			}
+
 			ASSERT(data, "Failed to load image");
 
 			// Create image
 			ImageSpecification imageSpecification = {};
-			imageSpecification.Data = data;
 			imageSpecification.Width = width;
 			imageSpecification.Height = height;
 			imageSpecification.Format = specification.sRGB ? ImageFormat::SRGBA8 : ImageFormat::RGBA8;
 			imageSpecification.Usage = ImageUsage::TEXTURE_2D;
 			imageSpecification.DebugName = (m_Specification.DebugName + ", Image").c_str();
 
-			m_Image = CreateRef<Image>(imageSpecification);
+			m_Image = CreateRef<Image>(imageSpecification, buffer);
 
 			// Free CPU memory
 			stbi_image_free(data);
 		}
+	}
+
+	Texture2D::Texture2D(Ref<Image> image)
+		: m_Image(image)
+	{
 	}
 
 	Texture2D::~Texture2D()

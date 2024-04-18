@@ -1,4 +1,5 @@
 #pragma once
+#include "Memory/Buffer.h"
 #include "VulkanTools.h"
 #include "VulkanAllocator.h"
 
@@ -24,11 +25,9 @@ namespace VkLibrary {
 
 	struct ImageSpecification
 	{
-		uint8_t* Data = nullptr;
 		uint32_t Width = 0;
 		uint32_t Height = 0;
 		uint32_t Depth = 1;
-		int Size = -1;
 		uint32_t LayerCount = 1;
 		ImageFormat Format = ImageFormat::NONE;
 		ImageUsage Usage = ImageUsage::NONE;
@@ -36,11 +35,13 @@ namespace VkLibrary {
 	};
 
 	// TODO: Add support for resource deletion queue in Release()
+	// TODO: Move Data into constructor
+	// TODO: Make Data into buffer
 
 	class Image
 	{
 	public:
-		Image(ImageSpecification specification);
+		Image(ImageSpecification specification, Buffer buffer = Buffer());
 		~Image();
 
 	public:
@@ -49,7 +50,9 @@ namespace VkLibrary {
 
 		uint32_t GetWidth() const { return m_Width; }
 		uint32_t GetHeight() const { return m_Height; }
+		uint32_t GetSize() const { return m_Size; }
 
+		inline Buffer GetBuffer() const { return m_Buffer; }
 		static uint32_t GetImageFormatSize(ImageFormat format);
 		static VkFormat ImageFormatToVulkan(ImageFormat format);
 		
@@ -63,6 +66,7 @@ namespace VkLibrary {
 		uint32_t m_Width = 0;
 		uint32_t m_Height = 0;
 		uint32_t m_Size = 0;
+		Buffer m_Buffer;
 
 		ImageInfo m_ImageInfo;
 		VkDescriptorImageInfo m_DescriptorImageInfo;
